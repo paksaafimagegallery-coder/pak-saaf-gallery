@@ -1,0 +1,13 @@
+{
+  "name": "Pak Saaf Image Gallery",
+  "short_name": "Pak Saaf",
+  "description": "LG&RDD KP Sanitation Gallery",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#074822",
+  "theme_color": "#0b6b3a",
+  "icons": [
+    { "src": "/images/dglg-logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/images/dglg-logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

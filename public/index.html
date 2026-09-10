@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pak Saaf Image Gallery | LG&RDD, KP</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b6b3a">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#0b6b3a;--primary-dark:#074822;--accent:#d4af37;--bg:#f4f8f5;--bg-soft:#eaf3ee;--card:#fff;--text:#14241b;--muted:#8a9b91;--border:#dde7e0;--shadow-sm:0 2px 8px rgba(11,107,58,.06);--shadow-lg:0 16px 48px rgba(11,107,58,.14);--radius:14px;--transition:.3s}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:14px}
+.logo-img{height:50px;border-radius:6px;background:#fff;padding:2px}
+.topbar a{background:var(--accent);color:var(--primary-dark);padding:8px 16px;border-radius:50px;font-weight:600;text-decoration:none}
+.hero{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:60px 24px;text-align:center}
+.hero h1{font-family:'Poppins';font-size:42px;margin-bottom:10px}
+.hero p{opacity:.9;max-width:600px;margin:0 auto 20px}
+.filters-bar{max-width:1400px;margin:-40px auto 0;padding:0 24px;position:relative;z-index:5}
+.filters-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:20px;display:flex;gap:16px;align-items:center}
+input,select{padding:12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit}
+main{max-width:1400px;margin:40px auto;padding:0 24px;flex:1;width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:var(--transition);border:1px solid var(--border)}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.card-body{padding:16px} .card-title{font-family:'Poppins';font-weight:700;font-size:17px}
+.modal-overlay{position:fixed;inset:0;background:rgba(7,30,18,.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);width:100%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:24px;overflow-y:auto}
+.btn-back{background:var(--bg-soft);color:var(--primary);border:1px solid var(--border);padding:8px 16px;border-radius:8px;cursor:pointer;margin-bottom:20px}
+.ba-tile{aspect-ratio:4/3;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg-soft);border:1px solid var(--border)}
+.ba-tile img{width:100%;height:100%;object-fit:cover}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column}
+.lightbox.active{display:flex}
+.lightbox img{max-width:80%;max-height:80vh;border-radius:4px;box-shadow:0 4px 15px rgba(0,0,0,0.5);object-fit:contain}
+.lightbox-close{position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.lightbox-close:hover{background:rgba(255,255,255,0.3);}
+.lightbox-controls{position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;padding:0 20px;pointer-events:none;}
+.lb-btn{pointer-events:all;background:rgba(255,255,255,0.15);color:#fff;border:none;width:50px;height:50px;border-radius:50%;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+.lb-btn:hover{background:rgba(255,255,255,0.3);}
+
+footer{background:var(--primary-dark);color:rgba(255,255,255,0.8);padding:24px;text-align:center;font-size:13px;margin-top:auto}
+footer strong{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/images/kp-logo.png" class="logo-img" alt="KP">
+    <img src="/images/dglg-logo.png" class="logo-img" alt="DGLG">
+    <div><div style="font-family:'Poppins';font-weight:700;font-size:18px">Pak Saaf Image Gallery</div><div style="font-size:12px;opacity:.85">Directorate General, LG&RDD, KP</div></div>
+  </div>
+  <a href="/login.html">Officer / Admin Login</a>
+</header>
+
+<section class="hero">
+  <h1>Pak Saaf <span style="color:var(--accent)">Image Gallery</span></h1>
+  <p>Visual documentation of cleanliness & sanitation activities across all 38 districts and 3,634 Village Councils.</p>
+</section>
+
+<div class="filters-bar">
+  <div class="filters-card">
+    <input type="text" id="searchInput" placeholder="Search District..." style="flex:1">
+  </div>
+</div>
+
+<main>
+  <h2 id="mainTitle" style="font-family:'Poppins';margin-bottom:20px">District Gallery</h2>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h3 id="modalTitle">Title</h3><div id="modalMeta" style="font-size:13px;opacity:.85"></div></div>
+      <button onclick="closeModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:20px">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img id="lightboxImg" src="" alt="Image">
+  <div class="lightbox-controls">
+    <button class="lb-btn" onclick="prevImage(event)">‹</button>
+    <button class="lb-btn" onclick="nextImage(event)">›</button>
+  </div>
+</div>
+
+<footer>
+  <div><strong>Pak Saaf Image Gallery</strong> · Directorate General, Local Government & Rural Development Department, Khyber Pakhtunkhwa</div>
+  <div style="margin-top:8px">Developed & Managed by: <strong>@Engr. Shaleem Khokhar</strong> | Contact # 0300-5988832</div>
+</footer>
+
+<script>
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+let hierarchy = {};
+let currentDistrict = '', currentTehsil = '', currentVcId = '';
+let lightboxImages = [];
+let lightboxIndex = 0;
+
+async function init() {
+  const res = await fetch('/api/hierarchy');
+  const villages = await res.json();
+  villages.forEach(v => {
+    if (!hierarchy[v.District]) hierarchy[v.District] = {};
+    if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = [];
+    hierarchy[v.District][v.Tehsil].push(v);
+  });
+  renderDistricts();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(err => console.log('SW err', err));
+}
+
+function renderDistricts() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const districts = Object.keys(hierarchy).filter(d => d.toLowerCase().includes(search));
+  document.getElementById('mainTitle').innerText = "District Gallery";
+  document.getElementById('grid').innerHTML = districts.map(d => `
+    <div class="card" onclick="openDistrict('${escapeHtml(d)}')">
+      <div style="height:140px;background:linear-gradient(135deg,#e8f0eb,#d4e3d8);display:flex;align-items:center;justify-content:center;font-family:'Poppins';font-size:36px;font-weight:800;color:#0b6b3a;opacity:.4">${escapeHtml(d.substring(0,2).toUpperCase())}</div>
+      <div class="card-body"><div class="card-title">${escapeHtml(d)}</div><div style="font-size:12px;color:#8a9b91">View Tehsils</div></div>
+    </div>`).join('');
+}
+
+function openDistrict(d) {
+  currentDistrict = d;
+  document.getElementById('modalTitle').innerText = d;
+  document.getElementById('modalMeta').innerText = `${Object.keys(hierarchy[d]).length} Tehsils`;
+  document.getElementById('modalBody').innerHTML = `<div class="grid">` + Object.keys(hierarchy[d]).map(t => `
+    <div class="card" onclick="openTehsil('${escapeHtml(t)}')"><div class="card-body"><div class="card-title">${escapeHtml(t)}</div><div style="font-size:12px;color:#8a9b91">${hierarchy[d][t].length} VCs</div></div></div>`).join('') + `</div>`;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function openTehsil(t) {
+  currentTehsil = t;
+  document.getElementById('modalTitle').innerText = `${currentDistrict} → ${t}`;
+  document.getElementById('modalMeta').innerText = `${hierarchy[currentDistrict][t].length} Village Councils`;
+  document.getElementById('modalBody').innerHTML = `
+    <button class="btn-back" onclick="openDistrict('${escapeHtml(currentDistrict)}')">← Back to Tehsils</button>
+    <input type="text" id="vcSearch" placeholder="Search Village Council..." onkeyup="filterVCs()" style="width:100%;margin-bottom:15px">
+    <div class="grid" id="vcGrid">` + hierarchy[currentDistrict][t].map(v => `
+      <div class="card" onclick="openVC('${v._id}','${escapeHtml(v.NC)}')"><div class="card-body"><div class="card-title">${escapeHtml(v.NC)}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('') + `</div>`;
+}
+
+function filterVCs() {
+  const search = document.getElementById('vcSearch').value.toLowerCase();
+  const filtered = hierarchy[currentDistrict][currentTehsil].filter(v => v.NC.toLowerCase().includes(search));
+  document.getElementById('vcGrid').innerHTML = filtered.map(v => `
+    <div class="card" onclick="openVC('${v._id}','${escapeHtml(v.NC)}')"><div class="card-body"><div class="card-title">${escapeHtml(v.NC)}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('');
+}
+
+function openVC(vcId, vcName) {
+  currentVcId = vcId;
+  document.getElementById('modalTitle').innerText = `${currentTehsil} → ${vcName}`;
+  document.getElementById('modalMeta').innerText = 'Select Date';
+  const dates = []; const today = new Date(); let daysAgo = 1;
+  while(dates.length < 6) { const d = new Date(today); d.setDate(today.getDate() - daysAgo); if (d.getDay() !== 0) dates.push(d.toISOString().split('T')[0]); daysAgo++; }
+  document.getElementById('modalBody').innerHTML = `<button class="btn-back" onclick="openTehsil('${escapeHtml(currentTehsil)}')">← Back to VCs</button>
+    <div class="grid">` + dates.map(d => `
+      <div class="card" onclick="openDate('${d}')"><div class="card-body"><div class="card-title">${new Date(d).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div><div style="font-size:12px;color:#8a9b91">View Images</div></div></div>`).join('') + `</div>`;
+}
+
+async function openDate(date) {
+  document.getElementById('modalMeta').innerText = 'Loading...';
+  document.getElementById('modalBody').innerHTML = `<div class="empty">Loading...</div>`;
+  const res = await fetch(`/api/images?vcId=${currentVcId}&date=${date}`);
+  const entry = await res.json();
+  const pairs = entry && entry.length > 0 ? entry[0].pairs : [];
+  document.getElementById('modalMeta').innerText = `${pairs.length} pair(s) uploaded`;
+  
+  lightboxImages = [];
+  let beforeHtml = '', afterHtml = '';
+  
+  for (let i = 1; i <= 4; i++) {
+    const pair = pairs.find(p => p.slot === i);
+    if (pair) {
+      const bIdx = lightboxImages.length;
+      lightboxImages.push(pair.before.url);
+      const aIdx = lightboxImages.length;
+      lightboxImages.push(pair.after.url);
+      
+      beforeHtml += `<div class="ba-tile" onclick="openLightbox(${bIdx})"><img src="${pair.before.url}" alt="Before"></div>`;
+      afterHtml += `<div class="ba-tile" onclick="openLightbox(${aIdx})"><img src="${pair.after.url}" alt="After"></div>`;
+    } else {
+      beforeHtml += `<div class="ba-tile" style="display:flex;align-items:center;justify-content:center;color:#8a9b91;font-size:12px;text-align:center">Pair ${i}<br>Not Uploaded</div>`;
+      afterHtml += `<div class="ba-tile" style="display:flex;align-items:center;justify-content:center;color:#8a9b91;font-size:12px;text-align:center">Pair ${i}<br>Not Uploaded</div>`;
+    }
+  }
+  
+  document.getElementById('modalBody').innerHTML = `<button class="btn-back" onclick="openVC('${currentVcId}', document.getElementById('modalTitle').innerText.split('→ ')[1])">← Back to Dates</button>
+    <h4 style="margin-bottom:10px">Before Images</h4>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">${beforeHtml}</div>
+    <h4 style="margin-bottom:10px">After Images</h4>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${afterHtml}</div>`;
+}
+
+function openLightbox(idx) {
+  lightboxIndex = idx;
+  updateLightbox();
+  document.getElementById('lightbox').classList.add('active');
+}
+function updateLightbox() {
+  if (lightboxImages.length > 0) {
+    document.getElementById('lightboxImg').src = lightboxImages[lightboxIndex];
+  }
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
+function nextImage(e) { 
+  e.stopPropagation(); 
+  lightboxIndex = (lightboxIndex + 1) % lightboxImages.length; 
+  updateLightbox(); 
+}
+function prevImage(e) { 
+  e.stopPropagation(); 
+  lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length; 
+  updateLightbox(); 
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowRight') nextImage(e);
+  if (e.key === 'ArrowLeft') prevImage(e);
+});
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+document.getElementById('searchInput').addEventListener('input', renderDistricts);
+init();
+</script>
+</body>
+</html>

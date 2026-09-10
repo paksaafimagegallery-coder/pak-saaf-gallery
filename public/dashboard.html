@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Pak Saaf</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+<style>
+body{margin:0;font-family:'Inter',sans-serif;background:#f4f8f5;display:flex;flex-direction:column;min-height:100vh}
+header{background:linear-gradient(135deg,#074822,#0b6b3a);color:#fff;padding:15px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo-img{height:40px;background:#fff;border-radius:4px;padding:2px;margin-right:10px}
+.container{max-width:1400px;margin:30px auto;padding:0 20px;display:flex;gap:30px;flex-wrap:wrap;flex:1;width:100%}
+.card{background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(11,107,58,.08);padding:25px;margin-bottom:20px;width:100%}
+input,select{width:100%;padding:12px;margin-bottom:15px;border:1.5px solid #dde7e0;border-radius:8px;box-sizing:border-box}
+.btn{background:#0b6b3a;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;width:100%}
+.btn-red{background:#d32f2f} .btn-gold{background:#d4af37;color:#074822}
+.pair-uploader{background:#f9fdfb;border:1px solid #eaf3ee;padding:15px;border-radius:8px;margin-bottom:15px}
+table{width:100%;border-collapse:collapse;margin-top:15px}th,td{padding:10px;border-bottom:1px solid #eaf3ee;text-align:left}
+.user-form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.user-form-row input, .user-form-row select{flex:1;min-width:150px;margin-bottom:0}
+.analytics-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+.stat-box{flex:1;min-width:150px;background:#eaf3ee;padding:20px;border-radius:8px;text-align:center}
+.stat-box h3{margin:0;color:#074822;font-size:18px}.stat-box p{margin:5px 0 0;color:#8a9b91;font-size:13px}
+.chart-container{height:300px;width:100%}
+
+/* Non-Compliance Panel Styles */
+.non-compliant-card{border:2px solid #d32f2f;background:#fff5f5}
+.non-compliant-table th{color:#d32f2f}
+
+footer{background:#074822;color:rgba(255,255,255,0.8);padding:24px;text-align:center;font-size:13px;margin-top:auto}
+footer strong{color:#d4af37}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center">
+    <img src="/images/kp-logo.png" class="logo-img"><img src="/images/dglg-logo.png" class="logo-img">
+    Dashboard Panel
+  </div>
+  <div><a href="/index.html" style="color:#d4af37;margin-right:15px">View Gallery →</a><button onclick="logout()" style="color:#fff;background:none;border:none;cursor:pointer">Logout</button></div>
+</header>
+
+<div class="container">
+  <div style="flex:1;min-width:300px;max-width:450px">
+    <div class="card">
+      <h2 style="margin-top:0">Upload Images</h2>
+      <p style="color:#8a9b91;font-size:13px">Logged in as: <strong id="distName"></strong></p>
+      <div id="adminSelects" style="display:none">
+        <select id="distSelect" onchange="updateTehsils()"></select>
+        <select id="tehsilSelect" onchange="updateVCs()"></select>
+        <select id="vcSelect"></select>
+      </div>
+      <input type="date" id="date" required>
+      <div id="pairUploaders"></div>
+      <button class="btn" onclick="uploadImages()">Upload to Cloud</button>
+      <p id="msg" style="font-size:14px;text-align:center;margin-top:15px"></p>
+    </div>
+  </div>
+
+  <div style="flex:2;min-width:300px">
+    <div class="card">
+      <h2 style="margin-top:0">📊 Live Compliance Analytics</h2>
+      <div class="analytics-row" id="analyticsRow">
+        <div class="stat-box"><h3 id="statTotalVcs">0</h3><p>Total VCs</p></div>
+        <div class="stat-box"><h3 id="statUploadedToday">0</h3><p>Uploaded Today</p></div>
+        <div class="stat-box"><h3 id="statUploaded6Days">0</h3><p>Uploaded (6 Days)</p></div>
+      </div>
+      <div class="chart-container"><canvas id="districtChart"></canvas></div>
+    </div>
+    
+    <div class="card">
+      <h2 style="margin-top:0">Manage Images</h2>
+      <div id="adminGallery"></div>
+    </div>
+  </div>
+
+  <!-- Zero Compliance Alert Panel -->
+  <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
+    <h2 style="margin-top:0;color:#d32f2f">🚨 Zero Compliance Alert (Last 3 Days)</h2>
+    <p style="color:#8a9b91;font-size:13px;margin-bottom:15px">The following VCs have NOT uploaded any images in the last 3 working days.</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+      <h3 id="nonCompliantCount" style="margin:0;font-size:18px">Total: 0 VCs</h3>
+      <button class="btn-red" style="width:auto;padding:8px 16px" onclick="downloadNonCompliantCSV()">⬇ Export Slackers CSV</button>
+    </div>
+    <div style="max-height:400px;overflow-y:auto;border:1px solid #eaf3ee;border-radius:8px">
+      <table class="non-compliant-table"><thead><tr><th>District</th><th>Tehsil</th><th>Village Council</th><th>Officer</th></tr></thead><tbody id="nonCompliantBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card" id="archiveCard" style="display:none">
+    <h2 style="margin-top:0">🗄️ Data Archive Center (Admin Only)</h2>
+    <p style="color:#8a9b91;font-size:13px;margin-bottom:20px">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them.</p>
+    
+    <h3 style="margin-bottom:10px">Download PDF Report (Tehsil-wise)</h3>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="flex:1;margin-bottom:0"></select>
+      <select id="pdfTehsilSelect" style="flex:1;margin-bottom:0"></select>
+      <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadPDF()">📄 Download PDF</button>
+    </div>
+    
+    <h3 style="margin-bottom:10px">Download ZIP Archive (District-wise)</h3>
+    <div style="display:flex;gap:10px">
+      <select id="zipDistSelect" style="flex:1;margin-bottom:0"></select>
+      <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadZip()">⬇ Download ZIP</button>
+    </div>
+    <p id="archiveMsg" style="font-size:14px;margin-top:15px;text-align:center"></p>
+  </div>
+
+  <div class="card" id="userMgmtCard" style="display:none">
+    <h2 style="margin-top:0">👤 User Management (Admin Only)</h2>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button class="btn" style="width:auto" onclick="generateAccounts()">⚡ Generate All VC Accounts</button>
+      <button class="btn-gold" style="width:auto" onclick="downloadCSV()">⬇ Download Accounts CSV</button>
+    </div>
+    <h3 style="margin-bottom:10px">Manual Add User (Assign to VC)</h3>
+    <div class="user-form-row">
+      <input type="text" id="newUsername" placeholder="Username (e.g., pes_custom_1)">
+      <input type="password" id="newPassword" placeholder="Temp Password (Leave blank for 12345)">
+    </div>
+    <div class="user-form-row" style="margin-bottom:15px">
+      <select id="newDistSelect" onchange="updateNewTehsils()" style="flex:1;min-width:150px;margin-bottom:0"></select>
+      <select id="newTehsilSelect" onchange="updateNewVCs()" style="flex:1;min-width:150px;margin-bottom:0"></select>
+      <select id="newVcSelect" style="flex:1;min-width:150px;margin-bottom:0"></select>
+    </div>
+    <button class="btn" style="width:auto;padding:10px 20px;margin-bottom:15px" onclick="createUser()">Add User</button>
+    <p id="userMsg" style="font-size:14px;margin-bottom:15px"></p>
+    
+    <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:15px">
+    <table><thead><tr><th>Username</th><th>District / Tehsil / VC</th><th>Action</th></tr></thead><tbody id="userTableBody"></tbody></table>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px">
+      <button id="prevPageBtn" class="btn" style="width:auto;padding:8px 16px" onclick="currentUserPage--; loadUsers()">← Previous</button>
+      <span id="paginationInfo" style="font-size:14px;color:#8a9b91"></span>
+      <button id="nextPageBtn" class="btn" style="width:auto;padding:8px 16px" onclick="currentUserPage++; loadUsers()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div><strong>Pak Saaf Image Gallery</strong> · Directorate General, Local Government & Rural Development Department, Khyber Pakhtunkhwa</div>
+  <div style="margin-top:8px">Developed & Managed by: <strong>@Engr. Shaleem Khokhar</strong> | Contact # 0300-5988832</div>
+</footer>
+
+<script>
+let hierarchy = {}, userRole = localStorage.getItem('role'), token = localStorage.getItem('token'), vcId = localStorage.getItem('vcId'), chartInstance = null;
+let currentUserPage = 1;
+let nonCompliantData = [];
+
+// --- IndexedDB Setup for Offline Uploads ---
+let db;
+const request = indexedDB.open('pakSaafDB', 1);
+request.onupgradeneeded = (event) => {
+  db = event.target.result;
+  if (!db.objectStoreNames.contains('pendingUploads')) {
+    db.createObjectStore('pendingUploads', { keyPath: 'id', autoIncrement: true });
+  }
+};
+request.onsuccess = (event) => {
+  db = event.target.result;
+  if (navigator.onLine) syncPendingUploads(); // Sync any pending uploads on load
+};
+window.addEventListener('online', syncPendingUploads);
+
+function saveOfflineUpload(dataObj) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pendingUploads', 'readwrite');
+    const store = tx.objectStore('pendingUploads');
+    const req = store.add(dataObj);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// SECURITY FIX 4: Check token expiry before syncing offline data
+async function syncPendingUploads() {
+  if (!db) return;
+  const token = localStorage.getItem('token');
+  if (!token) {
+    msg.innerText = '❌ Session expired. Please log in again to sync offline data.';
+    return;
+  }
+  
+  const tx = db.transaction('pendingUploads', 'readonly');
+  const store = tx.objectStore('pendingUploads');
+  const allReq = store.getAll();
+  allReq.onsuccess = async () => {
+    const pending = allReq.result;
+    if (pending.length > 0) {
+      msg.innerText = '🔄 Syncing offline uploads...';
+      for (const item of pending) {
+        const formData = new FormData();
+        formData.append('vcId', item.vcId);
+        formData.append('date', item.date);
+        for(let i=1; i<=4; i++) {
+          if(item[`pair${i}_before`]) formData.append(`pair${i}_before`, item[`pair${i}_before`]);
+          if(item[`pair${i}_after`]) formData.append(`pair${i}_after`, item[`pair${i}_after`]);
+        }
+        const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+        if (res.status === 401 || res.status === 403) {
+          msg.innerText = '❌ Session expired! Please log in again to sync.';
+          return; // Stop syncing if token is dead
+        }
+      }
+      // Only clear if all uploads succeeded
+      const clearTx = db.transaction('pendingUploads', 'readwrite');
+      clearTx.objectStore('pendingUploads').clear();
+      msg.innerText = '✅ Offline uploads synced successfully!';
+      loadGallery();
+    }
+  };
+}
+
+if (userRole === 'admin') {
+  document.getElementById('distName').innerText = "DGLG Main Admin";
+  document.getElementById('adminSelects').style.display = 'block';
+  document.getElementById('userMgmtCard').style.display = 'block';
+  document.getElementById('archiveCard').style.display = 'block';
+  document.getElementById('nonCompliantCard').style.display = 'block';
+} else {
+  document.getElementById('distName').innerText = `${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;
+}
+
+function logout() { localStorage.clear(); window.location.href = '/login.html'; }
+
+function buildUploaders() {
+  let html = '';
+  for(let i=1; i<=4; i++) html += `<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`;
+  document.getElementById('pairUploaders').innerHTML = html;
+}
+
+async function init() {
+  buildUploaders();
+  const res = await fetch('/api/hierarchy');
+  const villages = await res.json();
+  villages.forEach(v => {
+    if (!hierarchy[v.District]) hierarchy[v.District] = {};
+    if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = [];
+    hierarchy[v.District][v.Tehsil].push(v);
+  });
+  if (userRole === 'admin') {
+    let dHtml = '<option value="">Select District</option>';
+    Object.keys(hierarchy).forEach(d => dHtml += `<option>${d}</option>`);
+    document.getElementById('distSelect').innerHTML = dHtml;
+    document.getElementById('newDistSelect').innerHTML = dHtml;
+    document.getElementById('pdfDistSelect').innerHTML = dHtml;
+    document.getElementById('zipDistSelect').innerHTML = dHtml;
+    loadAnalytics();
+    loadNonCompliant();
+  }
+  loadGallery();
+  if(userRole === 'admin') loadUsers();
+}
+
+async function loadAnalytics() {
+  const res = await fetch('/api/stats/compliance', { headers: { 'Authorization': 'Bearer ' + token } });
+  const data = await res.json();
+  document.getElementById('statTotalVcs').innerText = data.totalVcs;
+  document.getElementById('statUploadedToday').innerText = data.uploadedTodayCount;
+  document.getElementById('statUploaded6Days').innerText = data.uploaded6DaysCount;
+  if(chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('districtChart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: data.districts.map(d => d.name), datasets: [{ label: 'Compliance % (6 Days)', data: data.districts.map(d => d.compliance), backgroundColor: '#0b6b3a' }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+}
+
+// --- Load Non-Compliant VCs ---
+async function loadNonCompliant() {
+  const res = await fetch('/api/stats/noncompliant', { headers: { 'Authorization': 'Bearer ' + token } });
+  const data = await res.json();
+  nonCompliantData = data.villages;
+  document.getElementById('nonCompliantCount').innerText = `Total: ${data.count} VCs`;
+  document.getElementById('nonCompliantBody').innerHTML = data.villages.map(v => `
+    <tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');
+}
+
+function downloadNonCompliantCSV() {
+  let csv = 'District,Tehsil,Village Council,Assigned Officer\n';
+  nonCompliantData.forEach(v => {
+    csv += `${v.district},${v.tehsil},${v.vcName},${v.officer}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'Non_Compliant_VCs.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function updateTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[distSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('tehsilSelect').innerHTML = tHtml; document.getElementById('vcSelect').innerHTML = ''; }
+function updateVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[distSelect.value][tehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v.NC}</option>`); document.getElementById('vcSelect').innerHTML = vHtml; }
+function updateNewTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[newDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('newTehsilSelect').innerHTML = tHtml; document.getElementById('newVcSelect').innerHTML = ''; }
+function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[newDistSelect.value][newTehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}" data-name="${v.NC}">${v.NC}</option>`); document.getElementById('newVcSelect').innerHTML = vHtml; }
+function updatePdfTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[pdfDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('pdfTehsilSelect').innerHTML = tHtml; }
+
+async function loadGallery() {
+  let url = `/api/images?vcId=${userRole === 'admin' ? vcSelect.value : vcId}`;
+  const res = await fetch(url); const entries = await res.json(); let html = '';
+  if (entries.length === 0) html = '<p style="color:#8a9b91;text-align:center">No images found.</p>';
+  entries.forEach(e => {
+    html += `<div style="border:1px solid #eaf3ee;border-radius:8px;margin-bottom:15px;padding:15px;display:flex;justify-content:space-between;align-items:center"><div><strong>${e.date}</strong> (${e.pairs.length} Pairs)</div>`;
+    if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
+    html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
+    e.pairs.forEach(p => {
+      // Generate tiny 5KB thumbnails for dashboard
+      const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
+      const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
+      html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('adminGallery').innerHTML = html;
+}
+
+async function deleteDate(entryId) {
+  if(!confirm('Delete ALL pairs for this date?')) return;
+  await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+  loadGallery(); loadAnalytics(); loadNonCompliant();
+}
+
+async function uploadImages() {
+  const targetVcId = userRole === 'admin' ? vcSelect.value : vcId;
+  if(!targetVcId) return alert('Please select VC first.');
+  if(!date.value) return alert('Please select date.');
+
+  msg.innerText = 'Compressing & Uploading...';
+  const offlineData = { vcId: targetVcId, date: date.value };
+  let anyFilesSelected = false;
+
+  for(let i=1; i<=4; i++) {
+    const bFile = document.getElementById(`p${i}b`).files[0]; 
+    const aFile = document.getElementById(`p${i}a`).files[0];
+    if(bFile && aFile) {
+      anyFilesSelected = true;
+      const compressedB = await imageCompression(bFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
+      const compressedA = await imageCompression(aFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
+      
+      // If offline, save to IndexedDB, else append to FormData
+      if (!navigator.onLine) {
+        offlineData[`pair${i}_before`] = compressedB;
+        offlineData[`pair${i}_after`] = compressedA;
+      } else {
+        const formData = new FormData();
+        formData.append('vcId', targetVcId); formData.append('date', date.value);
+        formData.append(`pair${i}_before`, compressedB); 
+        formData.append(`pair${i}_after`, compressedA);
+        const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+        const data = await res.json(); 
+        msg.innerText = '✅ ' + data.msg;
+      }
+    }
+  }
+
+  if (!anyFilesSelected) return msg.innerText = '❌ Please select at least one Before & After pair.';
+
+  if (!navigator.onLine) {
+    await saveOfflineUpload(offlineData);
+    msg.innerText = '📱 No internet. Upload saved offline! Will auto-sync when online.';
+  }
+  
+  loadGallery(); 
+  if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); }
+}
+
+async function loadUsers() {
+  const search = document.getElementById('userSearch').value;
+  const res = await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}`, { headers: { 'Authorization': 'Bearer ' + token } });
+  const data = await res.json();
+  
+  userTableBody.innerHTML = data.users.map(u => `
+    <tr><td>${u.username}</td><td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>
+    <td>
+      <button class="btn-gold" style="width:auto;padding:4px 8px;font-size:12px" onclick="resetPass('${u._id}')">Reset Pass</button>
+      <button class="btn-red" style="width:auto;padding:4px 8px;font-size:12px" onclick="deleteUser('${u._id}')">Delete</button>
+    </td></tr>`).join('');
+    
+  document.getElementById('paginationInfo').innerText = `Page ${data.currentPage} of ${data.totalPages} (${data.totalUsers} Total Users)`;
+  document.getElementById('prevPageBtn').style.display = data.currentPage > 1 ? 'block' : 'none';
+  document.getElementById('nextPageBtn').style.display = data.currentPage < data.totalPages ? 'block' : 'none';
+}
+
+async function createUser() {
+  const u = document.getElementById('newUsername').value; const p = document.getElementById('newPassword').value;
+  const vcId = document.getElementById('newVcSelect').value; const vcName = document.getElementById('newVcSelect').selectedOptions[0]?.dataset.name;
+  const district = document.getElementById('newDistSelect').value; const tehsil = document.getElementById('newTehsilSelect').value;
+  if(!u) return alert('Please enter username'); if(!vcId) return alert('Please select District, Tehsil, and VC');
+  const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ username: u, password: p || '12345', vcId, district, tehsil, vcName }) });
+  if(res.ok) { document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; alert('User created!'); loadUsers(); } else { const err = await res.json(); alert(err.msg); }
+}
+
+async function generateAccounts() {
+  if(!confirm('This will create accounts for all 3,634 VCs. Continue?')) return;
+  userMsg.innerText = 'Generating... This may take 30 seconds.';
+  const res = await fetch('/api/users/generate', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+  const data = await res.json(); userMsg.innerText = '✅ ' + data.msg; loadUsers();
+}
+async function downloadCSV() { window.location.href = '/api/users/csv?token=' + token; }
+async function resetPass(id) { await fetch(`/api/users/reset/${id}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); alert('Password reset to 12345'); }
+async function deleteUser(id) { if(!confirm('Delete this user?')) return; await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadUsers(); }
+
+// PDF & ZIP Archive Functions
+async function downloadPDF() {
+  const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value;
+  if(!d || !t) return alert('Please select District and Tehsil first.');
+  document.getElementById('archiveMsg').innerText = 'Generating PDF... This may take 30-60 seconds depending on data size.';
+  try {
+    const res = await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('Failed');
+    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `${d}_${t}_6Day_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ PDF downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate PDF.'; }
+}
+
+async function downloadZip() {
+  const d = document.getElementById('zipDistSelect').value;
+  if(!d) return alert('Please select District first.');
+  document.getElementById('archiveMsg').innerText = 'Generating ZIP Archive... This may take 1-2 minutes.';
+  try {
+    const res = await fetch(`/api/download/zip/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('Failed');
+    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `${d}_6Day_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ ZIP Archive downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate ZIP.'; }
+}
+
+init();
+</script>
+</body>
+</html>
