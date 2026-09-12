@@ -34,7 +34,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- Models ---
 const Village = mongoose.model('Village', new mongoose.Schema({
-  District: String, Tehsil: String, NC: String
+  District: String, 
+  Tehsil: String, 
+  'Village Councils': String // RENAMED FROM NC
 }));
 
 const User = mongoose.model('User', new mongoose.Schema({
@@ -66,7 +68,6 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: { folder: 'pak-saaf-gallery', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
 });
-// SECURITY FIX 1: Enforce 500KB server-side limit to prevent compression bypass
 const upload = multer({ 
   storage: storage, 
   limits: { fileSize: 500 * 1024 } 
@@ -81,7 +82,7 @@ function auth(req, res, next) {
   } catch (e) { res.status(403).json({ msg: 'Invalid or expired token' }); }
 }
 
-// SECURITY FIX 3: Pakistan Standard Time (PKT) Date Helpers
+// Pakistan Standard Time (PKT) Date Helpers
 function getPakistanDateString(date = new Date()) {
   const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
   const year = pkTime.getUTCFullYear();
@@ -96,7 +97,7 @@ function getRecentPakistanDates(count) {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000));
-    if (pkDate.getUTCDay() !== 0) { // 0 is Sunday
+    if (pkDate.getUTCDay() !== 0) { 
       dates.push(getPakistanDateString(d));
     }
     daysAgo++;
@@ -110,7 +111,7 @@ async function cleanupOldDates() {
     const vcIds = await DateEntry.distinct('vcId');
     for (const vcId of vcIds) {
       const entries = await DateEntry.find({ vcId }).sort({ date: -1 });
-      const entriesToDelete = entries.slice(6); // Keep 6 days
+      const entriesToDelete = entries.slice(6);
       for (const entry of entriesToDelete) {
         for (const pair of entry.pairs) {
           await cloudinary.uploader.destroy(pair.before.cloudinaryId);
@@ -196,7 +197,7 @@ app.get('/api/users/paginated', auth, async (req, res) => {
 app.post('/api/users/generate', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
-    const villages = await Village.find().sort({ District: 1, Tehsil: 1, NC: 1 });
+    const villages = await Village.find().sort({ District: 1, Tehsil: 1, 'Village Councils': 1 });
     const existingUsers = await User.find({ role: 'officer' });
     const existingUsernames = new Set(existingUsers.map(u => u.username));
     const existingVcIds = new Set(existingUsers.map(u => u.vcId?.toString()));
@@ -212,7 +213,7 @@ app.post('/api/users/generate', auth, async (req, res) => {
         username = `${distCode}_${String(districtCounters[distCode]).padStart(3, '0')}`;
       } while (existingUsernames.has(username)); 
       existingUsernames.add(username);
-      newUsers.push({ username, password: await bcrypt.hash('12345', 10), role: 'officer', vcId: v._id, district: v.District, tehsil: v.Tehsil, vcName: v.NC, mustChangePassword: true });
+      newUsers.push({ username, password: await bcrypt.hash('12345', 10), role: 'officer', vcId: v._id, district: v.District, tehsil: v.Tehsil, vcName: v['Village Councils'], mustChangePassword: true });
     }
     if (newUsers.length > 0) await User.insertMany(newUsers);
     res.json({ msg: `Generated ${newUsers.length} new accounts. Existing VCs skipped.` });
@@ -278,14 +279,14 @@ app.get('/api/stats/noncompliant', auth, async (req, res) => {
   try {
     const recentDates = getRecentPakistanDates(3);
     const recentVcIds = await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId');
-    const nonCompliantVillages = await Village.find({ _id: { $nin: recentVcIds } }).sort({ District: 1, Tehsil: 1, NC: 1 });
+    const nonCompliantVillages = await Village.find({ _id: { $nin: recentVcIds } }).sort({ District: 1, Tehsil: 1, 'Village Councils': 1 });
     
     const officers = await User.find({ vcId: { $in: nonCompliantVillages.map(v => v._id) } });
     const officerMap = {};
     officers.forEach(o => officerMap[o.vcId] = o.username);
 
     const result = nonCompliantVillages.map(v => ({
-      district: v.District, tehsil: v.Tehsil, vcName: v.NC, officer: officerMap[v._id] || 'No Account'
+      district: v.District, tehsil: v.Tehsil, vcName: v['Village Councils'], officer: officerMap[v._id] || 'No Account'
     }));
     res.json({ count: result.length, villages: result });
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
@@ -343,7 +344,6 @@ app.post('/api/upload', auth, (req, res, next) => {
     
     if (uploadedCount === 0 && !isNew) return res.json({ msg: rejectedMsg || 'No new pairs uploaded.' });
 
-    // SECURITY FIX 2: If DB fails, delete from Cloudinary to prevent orphans
     try {
       await entry.save();
     } catch (dbErr) {
@@ -401,7 +401,7 @@ app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => 
       for (const pair of entry.pairs) {
         if (doc.y > doc.page.height - 250) doc.addPage();
         let currentY = doc.y;
-        doc.fontSize(14).fillColor('#074822').text(`VC: ${village.NC} | Date: ${entry.date} | Pair ${pair.slot}`, 50, currentY);
+        doc.fontSize(14).fillColor('#074822').text(`VC: ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`, 50, currentY);
         currentY += 25;
         const bUrl = pair.before.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
         const aUrl = pair.after.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
@@ -439,9 +439,9 @@ app.get('/api/download/zip/district/:district', auth, async (req, res) => {
       const village = villageMap[entry.vcId];
       for (const pair of entry.pairs) {
         const bRes = await axios.get(pair.before.url, { responseType: 'arraybuffer' });
-        zip.append(Buffer.from(bRes.data, 'binary'), { name: `${village.Tehsil}/${village.NC}/${entry.date}/pair${pair.slot}_before.jpg` });
+        zip.append(Buffer.from(bRes.data, 'binary'), { name: `${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_before.jpg` });
         const aRes = await axios.get(pair.after.url, { responseType: 'arraybuffer' });
-        zip.append(Buffer.from(aRes.data, 'binary'), { name: `${village.Tehsil}/${village.NC}/${entry.date}/pair${pair.slot}_after.jpg` });
+        zip.append(Buffer.from(aRes.data, 'binary'), { name: `${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_after.jpg` });
       }
     }
     await zip.finalize();

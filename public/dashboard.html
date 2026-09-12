@@ -24,7 +24,6 @@ table{width:100%;border-collapse:collapse;margin-top:15px}th,td{padding:10px;bor
 .stat-box h3{margin:0;color:#074822;font-size:18px}.stat-box p{margin:5px 0 0;color:#8a9b91;font-size:13px}
 .chart-container{height:300px;width:100%}
 
-/* Non-Compliance Panel Styles */
 .non-compliant-card{border:2px solid #d32f2f;background:#fff5f5}
 .non-compliant-table th{color:#d32f2f}
 
@@ -75,7 +74,6 @@ footer strong{color:#d4af37}
     </div>
   </div>
 
-  <!-- Zero Compliance Alert Panel -->
   <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
     <h2 style="margin-top:0;color:#d32f2f">🚨 Zero Compliance Alert (Last 3 Days)</h2>
     <p style="color:#8a9b91;font-size:13px;margin-bottom:15px">The following VCs have NOT uploaded any images in the last 3 working days.</p>
@@ -146,7 +144,6 @@ let hierarchy = {}, userRole = localStorage.getItem('role'), token = localStorag
 let currentUserPage = 1;
 let nonCompliantData = [];
 
-// --- IndexedDB Setup for Offline Uploads ---
 let db;
 const request = indexedDB.open('pakSaafDB', 1);
 request.onupgradeneeded = (event) => {
@@ -157,7 +154,7 @@ request.onupgradeneeded = (event) => {
 };
 request.onsuccess = (event) => {
   db = event.target.result;
-  if (navigator.onLine) syncPendingUploads(); // Sync any pending uploads on load
+  if (navigator.onLine) syncPendingUploads();
 };
 window.addEventListener('online', syncPendingUploads);
 
@@ -171,7 +168,6 @@ function saveOfflineUpload(dataObj) {
   });
 }
 
-// SECURITY FIX 4: Check token expiry before syncing offline data
 async function syncPendingUploads() {
   if (!db) return;
   const token = localStorage.getItem('token');
@@ -198,10 +194,9 @@ async function syncPendingUploads() {
         const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
         if (res.status === 401 || res.status === 403) {
           msg.innerText = '❌ Session expired! Please log in again to sync.';
-          return; // Stop syncing if token is dead
+          return;
         }
       }
-      // Only clear if all uploads succeeded
       const clearTx = db.transaction('pendingUploads', 'readwrite');
       clearTx.objectStore('pendingUploads').clear();
       msg.innerText = '✅ Offline uploads synced successfully!';
@@ -266,7 +261,6 @@ async function loadAnalytics() {
   });
 }
 
-// --- Load Non-Compliant VCs ---
 async function loadNonCompliant() {
   const res = await fetch('/api/stats/noncompliant', { headers: { 'Authorization': 'Bearer ' + token } });
   const data = await res.json();
@@ -289,9 +283,9 @@ function downloadNonCompliantCSV() {
 }
 
 function updateTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[distSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('tehsilSelect').innerHTML = tHtml; document.getElementById('vcSelect').innerHTML = ''; }
-function updateVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[distSelect.value][tehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v.NC}</option>`); document.getElementById('vcSelect').innerHTML = vHtml; }
+function updateVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[distSelect.value][tehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v['Village Councils']}</option>`); document.getElementById('vcSelect').innerHTML = vHtml; }
 function updateNewTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[newDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('newTehsilSelect').innerHTML = tHtml; document.getElementById('newVcSelect').innerHTML = ''; }
-function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[newDistSelect.value][newTehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}" data-name="${v.NC}">${v.NC}</option>`); document.getElementById('newVcSelect').innerHTML = vHtml; }
+function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[newDistSelect.value][newTehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}" data-name="${v['Village Councils']}">${v['Village Councils']}</option>`); document.getElementById('newVcSelect').innerHTML = vHtml; }
 function updatePdfTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[pdfDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('pdfTehsilSelect').innerHTML = tHtml; }
 
 async function loadGallery() {
@@ -303,7 +297,6 @@ async function loadGallery() {
     if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
     html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
     e.pairs.forEach(p => {
-      // Generate tiny 5KB thumbnails for dashboard
       const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
@@ -336,7 +329,6 @@ async function uploadImages() {
       const compressedB = await imageCompression(bFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
       const compressedA = await imageCompression(aFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
       
-      // If offline, save to IndexedDB, else append to FormData
       if (!navigator.onLine) {
         offlineData[`pair${i}_before`] = compressedB;
         offlineData[`pair${i}_after`] = compressedA;
@@ -399,7 +391,6 @@ async function downloadCSV() { window.location.href = '/api/users/csv?token=' + 
 async function resetPass(id) { await fetch(`/api/users/reset/${id}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); alert('Password reset to 12345'); }
 async function deleteUser(id) { if(!confirm('Delete this user?')) return; await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadUsers(); }
 
-// PDF & ZIP Archive Functions
 async function downloadPDF() {
   const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value;
   if(!d || !t) return alert('Please select District and Tehsil first.');

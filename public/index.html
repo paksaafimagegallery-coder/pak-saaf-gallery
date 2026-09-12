@@ -147,14 +147,14 @@ function openTehsil(t) {
     <button class="btn-back" onclick="openDistrict('${escapeHtml(currentDistrict)}')">← Back to Tehsils</button>
     <input type="text" id="vcSearch" placeholder="Search Village Council..." onkeyup="filterVCs()" style="width:100%;margin-bottom:15px">
     <div class="grid" id="vcGrid">` + hierarchy[currentDistrict][t].map(v => `
-      <div class="card" onclick="openVC('${v._id}','${escapeHtml(v.NC)}')"><div class="card-body"><div class="card-title">${escapeHtml(v.NC)}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('') + `</div>`;
+      <div class="card" onclick="openVC('${v._id}','${escapeHtml(v['Village Councils'])}')"><div class="card-body"><div class="card-title">${escapeHtml(v['Village Councils'])}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('') + `</div>`;
 }
 
 function filterVCs() {
   const search = document.getElementById('vcSearch').value.toLowerCase();
-  const filtered = hierarchy[currentDistrict][currentTehsil].filter(v => v.NC.toLowerCase().includes(search));
+  const filtered = hierarchy[currentDistrict][currentTehsil].filter(v => v['Village Councils'].toLowerCase().includes(search));
   document.getElementById('vcGrid').innerHTML = filtered.map(v => `
-    <div class="card" onclick="openVC('${v._id}','${escapeHtml(v.NC)}')"><div class="card-body"><div class="card-title">${escapeHtml(v.NC)}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('');
+    <div class="card" onclick="openVC('${v._id}','${escapeHtml(v['Village Councils'])}')"><div class="card-body"><div class="card-title">${escapeHtml(v['Village Councils'])}</div><div style="font-size:12px;color:#8a9b91">View Dates</div></div></div>`).join('');
 }
 
 function openVC(vcId, vcName) {
