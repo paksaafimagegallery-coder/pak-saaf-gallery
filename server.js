@@ -188,6 +188,10 @@ app.post('/api/users/generate', auth, async (req, res) => {
     const existingVcIds = new Set(existingUsers.map(u => u.vcId?.toString()));
     const districtCounters = {};
     const newUsers = [];
+    
+    // FIX: HASH THE PASSWORD ONLY ONCE (Takes 0.1 seconds instead of 6 minutes!)
+    const hashedPassword = await bcrypt.hash('12345', 10);
+    
     for (const v of villages) {
       if (existingVcIds.has(v._id.toString())) continue;
       let distCode = v.District.substring(0, 3).toLowerCase().replace(/[^a-z]/g, '');
@@ -198,7 +202,16 @@ app.post('/api/users/generate', auth, async (req, res) => {
         username = `${distCode}_${String(districtCounters[distCode]).padStart(3, '0')}`;
       } while (existingUsernames.has(username)); 
       existingUsernames.add(username);
-      newUsers.push({ username, password: await bcrypt.hash('12345', 10), role: 'officer', vcId: v._id, district: v.District, tehsil: v.Tehsil, vcName: v['Village Councils'], mustChangePassword: true });
+      newUsers.push({ 
+        username, 
+        password: hashedPassword, // Reuse the same hash
+        role: 'officer', 
+        vcId: v._id, 
+        district: v.District, 
+        tehsil: v.Tehsil, 
+        vcName: v['Village Councils'], 
+        mustChangePassword: true 
+      });
     }
     if (newUsers.length > 0) await User.insertMany(newUsers);
     res.json({ msg: `Generated ${newUsers.length} new accounts. Existing VCs skipped.` });
