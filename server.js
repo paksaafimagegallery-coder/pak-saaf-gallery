@@ -8,35 +8,24 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const path = require('path');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const archiver = require('archiver');
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
 
 const app = express();
 
-// --- Security Middleware ---
 app.use(helmet());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { msg: 'Too many login attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('MongoDB Error:', err));
 
-// --- Models ---
 const Village = mongoose.model('Village', new mongoose.Schema({
   District: String, 
   Tehsil: String, 
-  'Village Councils': String // RENAMED FROM NC
+  'Village Councils': String
 }));
 
 const User = mongoose.model('User', new mongoose.Schema({
@@ -68,10 +57,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: { folder: 'pak-saaf-gallery', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
 });
-const upload = multer({ 
-  storage: storage, 
-  limits: { fileSize: 500 * 1024 } 
-});
+const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 } });
 
 function auth(req, res, next) {
   const token = req.header('Authorization');
@@ -82,7 +68,6 @@ function auth(req, res, next) {
   } catch (e) { res.status(403).json({ msg: 'Invalid or expired token' }); }
 }
 
-// Pakistan Standard Time (PKT) Date Helpers
 function getPakistanDateString(date = new Date()) {
   const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
   const year = pkTime.getUTCFullYear();
@@ -105,7 +90,6 @@ function getRecentPakistanDates(count) {
   return dates;
 }
 
-// --- AUTO-DELETE LOGIC (6 Days Rolling Window per VC) ---
 async function cleanupOldDates() {
   try {
     const vcIds = await DateEntry.distinct('vcId');
@@ -125,7 +109,6 @@ async function cleanupOldDates() {
 cleanupOldDates();
 setInterval(cleanupOldDates, 60 * 60 * 1000);
 
-// --- Routes ---
 app.get('/api/hierarchy', async (req, res) => { try { res.json(await Village.find()); } catch(e) { res.json([]); } });
 
 app.get('/api/images', async (req, res) => {
@@ -138,7 +121,8 @@ app.get('/api/images', async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-app.post('/api/login', loginLimiter, async (req, res) => {
+// RATE LIMITER REMOVED TEMPORARILY FOR DEBUGGING
+app.post('/api/login', async (req, res) => {
   const user = await User.findOne({ username: req.body.username });
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) return res.status(401).json({ msg: 'Invalid credentials' });
   const token = jwt.sign({ id: user._id, role: user.role, vcId: user.vcId, mustChangePassword: user.mustChangePassword }, process.env.JWT_SECRET, { expiresIn: '8h' });
@@ -250,7 +234,6 @@ app.get('/api/users/csv', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
-// --- ANALYTICS ROUTE (PKT Fixed) ---
 app.get('/api/stats/compliance', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -273,7 +256,6 @@ app.get('/api/stats/compliance', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Stats failed' }); }
 });
 
-// --- ZERO COMPLIANCE ROUTE (PKT Fixed) ---
 app.get('/api/stats/noncompliant', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -292,7 +274,6 @@ app.get('/api/stats/noncompliant', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
-// --- UPLOAD LOGIC (With Orphan Cleanup & Multer Error Handler) ---
 app.post('/api/upload', auth, (req, res, next) => {
   upload.fields([
     { name: 'pair1_before', maxCount: 1 }, { name: 'pair1_after', maxCount: 1 },
@@ -375,7 +356,6 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ msg: 'Failed' }); }
 });
 
-// --- PDF & ZIP ARCHIVE ROUTES ---
 app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
