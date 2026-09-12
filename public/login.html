@@ -23,15 +23,26 @@ async function login() {
   const res = await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: username.value, password: password.value })
+    body: JSON.stringify({ username: document.getElementById('username').value, password: document.getElementById('password').value })
   });
   if(res.ok) {
     const data = await res.json();
-    localStorage.setItem('token', data.token); localStorage.setItem('role', data.role); localStorage.setItem('vcId', data.vcId);
-    localStorage.setItem('mustChangePassword', data.mustChangePassword); localStorage.setItem('district', data.district); localStorage.setItem('tehsil', data.tehsil); localStorage.setItem('vcName', data.vcName);
-    if(data.mustChangePassword) window.location.href = '/change-password.html';
-    else window.location.href = '/dashboard.html';
-  } else { err.innerText = 'Invalid username or password'; }
+    localStorage.setItem('token', data.token); 
+    localStorage.setItem('role', data.role); 
+    localStorage.setItem('vcId', data.vcId);
+    localStorage.setItem('mustChangePassword', data.mustChangePassword); 
+    localStorage.setItem('district', data.district); 
+    localStorage.setItem('tehsil', data.tehsil); 
+    localStorage.setItem('vcName', data.vcName);
+    
+    if(data.mustChangePassword) {
+      window.location.href = '/change-password.html';
+    } else {
+      window.location.href = '/dashboard.html';
+    }
+  } else { 
+    document.getElementById('err').innerText = 'Invalid username or password'; 
+  }
 }
 </script>
 </body>
