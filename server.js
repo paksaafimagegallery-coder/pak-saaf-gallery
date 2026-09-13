@@ -61,7 +61,8 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 } });
 
 function auth(req, res, next) {
-  const token = req.header('Authorization');
+  // Check both the Authorization header AND the URL query parameter
+  const token = req.header('Authorization') || req.query.token;
   if (!token) return res.status(401).json({ msg: 'No token' });
   try {
     req.user = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
