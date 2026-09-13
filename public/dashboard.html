@@ -68,8 +68,17 @@ footer strong{color:#d4af37}
       <div class="chart-container"><canvas id="districtChart"></canvas></div>
     </div>
     
-    <div class="card">
+      <div class="card">
       <h2 style="margin-top:0">Manage Images</h2>
+      
+      <!-- NEW: Independent Filters for Gallery -->
+      <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+        <select id="g_dist" onchange="updateGalleryTehsils()" style="flex:1; min-width:120px; margin-bottom:0"></select>
+        <select id="g_tehsil" onchange="updateGalleryVCs()" style="flex:1; min-width:120px; margin-bottom:0"></select>
+        <select id="g_vc" onchange="loadGallery()" style="flex:1; min-width:120px; margin-bottom:0"></select>
+      </div>
+      <input type="date" id="g_date" onchange="loadGallery()" style="margin-bottom:20px; max-width:200px; padding:10px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
+      
       <div id="adminGallery"></div>
     </div>
   </div>
@@ -223,6 +232,51 @@ function buildUploaders() {
   document.getElementById('pairUploaders').innerHTML = html;
 }
 
+// --- Gallery Filter Functions ---
+function updateGalleryTehsils() { 
+  let tHtml = '<option value="">Select Tehsil</option>'; 
+  Object.keys(hierarchy[g_dist.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); 
+  document.getElementById('g_tehsil').innerHTML = tHtml; 
+  document.getElementById('g_vc').innerHTML = ''; 
+}
+function updateGalleryVCs() { 
+  let vHtml = '<option value="">Select VC</option>'; 
+  (hierarchy[g_dist.value][g_tehsil.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v['Village Councils']}</option>`); 
+  document.getElementById('g_vc').innerHTML = vHtml; 
+  loadGallery();
+}
+
+async function loadGallery() {
+  const targetVcId = userRole === 'admin' ? document.getElementById('g_vc').value : vcId;
+  const selectedDate = document.getElementById('g_date').value;
+  
+  if (userRole === 'admin' && !targetVcId) {
+    document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a District, Tehsil, and VC to view images.</p>';
+    return;
+  }
+  
+  let url = `/api/images?vcId=${targetVcId}`;
+  if (selectedDate) url += `&date=${selectedDate}`;
+  
+  const res = await fetch(url); 
+  const entries = await res.json(); 
+  let html = '';
+  if (entries.length === 0) html = '<p style="color:#8a9b91;text-align:center">No images found for this selection.</p>';
+  
+  entries.forEach(e => {
+    html += `<div style="border:1px solid #eaf3ee;border-radius:8px;margin-bottom:15px;padding:15px;display:flex;justify-content:space-between;align-items:center"><div><strong>${e.date}</strong> (${e.pairs.length} Pairs)</div>`;
+    if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
+    html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
+    e.pairs.forEach(p => {
+      const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
+      const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
+      html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('adminGallery').innerHTML = html;
+}
+
 async function init() {
   buildUploaders();
   const res = await fetch('/api/hierarchy');
@@ -239,13 +293,11 @@ async function init() {
     document.getElementById('newDistSelect').innerHTML = dHtml;
     document.getElementById('pdfDistSelect').innerHTML = dHtml;
     document.getElementById('zipDistSelect').innerHTML = dHtml;
+    document.getElementById('g_dist').innerHTML = dHtml; // Populate Gallery Filter
+    document.getElementById('galleryFilters').style.display = 'flex'; // Show Gallery Filters
     loadAnalytics();
     loadNonCompliant();
   }
-  
-  // NEW LINE: Reload gallery when date is changed
-  document.getElementById('date').addEventListener('change', loadGallery);
-  
   loadGallery();
   if(userRole === 'admin') loadUsers();
 }
