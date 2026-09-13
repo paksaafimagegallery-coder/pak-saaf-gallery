@@ -242,6 +242,10 @@ async function init() {
     loadAnalytics();
     loadNonCompliant();
   }
+  
+  // NEW LINE: Reload gallery when date is changed
+  document.getElementById('date').addEventListener('change', loadGallery);
+  
   loadGallery();
   if(userRole === 'admin') loadUsers();
 }
@@ -289,14 +293,30 @@ function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hi
 function updatePdfTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[pdfDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('pdfTehsilSelect').innerHTML = tHtml; }
 
 async function loadGallery() {
-  let url = `/api/images?vcId=${userRole === 'admin' ? vcSelect.value : vcId}`;
-  const res = await fetch(url); const entries = await res.json(); let html = '';
-  if (entries.length === 0) html = '<p style="color:#8a9b91;text-align:center">No images found.</p>';
+  const targetVcId = userRole === 'admin' ? vcSelect.value : vcId;
+  const selectedDate = document.getElementById('date').value;
+  
+  // If Admin hasn't selected a VC yet, show a placeholder message
+  if (userRole === 'admin' && !targetVcId) {
+    document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a District, Tehsil, and VC to view images.</p>';
+    return;
+  }
+  
+  // Fetch images filtered by VC AND Date (if a date is selected)
+  let url = `/api/images?vcId=${targetVcId}`;
+  if (selectedDate) url += `&date=${selectedDate}`;
+  
+  const res = await fetch(url); 
+  const entries = await res.json(); 
+  let html = '';
+  if (entries.length === 0) html = '<p style="color:#8a9b91;text-align:center">No images found for this selection.</p>';
+  
   entries.forEach(e => {
     html += `<div style="border:1px solid #eaf3ee;border-radius:8px;margin-bottom:15px;padding:15px;display:flex;justify-content:space-between;align-items:center"><div><strong>${e.date}</strong> (${e.pairs.length} Pairs)</div>`;
     if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
     html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
     e.pairs.forEach(p => {
+      // Generate tiny 5KB thumbnails for dashboard
       const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
