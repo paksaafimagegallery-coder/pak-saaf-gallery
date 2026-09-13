@@ -68,16 +68,16 @@ footer strong{color:#d4af37}
       <div class="chart-container"><canvas id="districtChart"></canvas></div>
     </div>
     
-      <div class="card">
+    <div class="card">
       <h2 style="margin-top:0">Manage Images</h2>
       
-      <!-- NEW: Independent Filters for Gallery -->
-      <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
-        <select id="g_dist" onchange="updateGalleryTehsils()" style="flex:1; min-width:120px; margin-bottom:0"></select>
-        <select id="g_tehsil" onchange="updateGalleryVCs()" style="flex:1; min-width:120px; margin-bottom:0"></select>
-        <select id="g_vc" onchange="loadGallery()" style="flex:1; min-width:120px; margin-bottom:0"></select>
+      <!-- NEW: Search Bar + Date Filter + Load Button -->
+      <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px; align-items:center;">
+        <input type="text" id="g_vc_search" list="vclist" placeholder="Type VC name (e.g. Akhroota)..." style="flex:2; min-width:200px; margin-bottom:0; padding:11px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
+        <datalist id="vclist"></datalist>
+        <input type="date" id="g_date" style="flex:1; min-width:140px; margin-bottom:0; padding:10px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
+        <button class="btn" style="width:auto; padding:11px 20px; margin-bottom:0;" onclick="loadGallery()">🔍 Load Images</button>
       </div>
-      <input type="date" id="g_date" onchange="loadGallery()" style="margin-bottom:20px; max-width:200px; padding:10px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
       
       <div id="adminGallery"></div>
     </div>
@@ -247,14 +247,33 @@ function updateGalleryVCs() {
 }
 
 async function loadGallery() {
-  const targetVcId = userRole === 'admin' ? document.getElementById('g_vc').value : vcId;
-  const selectedDate = document.getElementById('g_date').value;
+  let targetVcId = vcId; // Default for officers
   
-  if (userRole === 'admin' && !targetVcId) {
-    document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a District, Tehsil, and VC to view images.</p>';
-    return;
+  if (userRole === 'admin') {
+    const searchName = document.getElementById('g_vc_search').value.toLowerCase();
+    if (!searchName) {
+      document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please type a VC name and click Load Images.</p>';
+      return;
+    }
+    
+    // Search all villages for a match
+    let foundVc = null;
+    for (const d in hierarchy) {
+      for (const t in hierarchy[d]) {
+        foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName));
+        if (foundVc) break;
+      }
+      if (foundVc) break;
+    }
+    
+    if (!foundVc) {
+      document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">No Village Council found with that name.</p>';
+      return;
+    }
+    targetVcId = foundVc._id;
   }
   
+  const selectedDate = document.getElementById('g_date').value;
   let url = `/api/images?vcId=${targetVcId}`;
   if (selectedDate) url += `&date=${selectedDate}`;
   
@@ -293,7 +312,18 @@ async function init() {
     document.getElementById('newDistSelect').innerHTML = dHtml;
     document.getElementById('pdfDistSelect').innerHTML = dHtml;
     document.getElementById('zipDistSelect').innerHTML = dHtml;
-    document.getElementById('g_dist').innerHTML = dHtml; // Populate Gallery Filter
+    
+    // Populate Search Datalist for Gallery
+    let vcListHtml = '';
+    Object.keys(hierarchy).forEach(d => {
+      Object.keys(hierarchy[d]).forEach(t => {
+        hierarchy[d][t].forEach(v => {
+          vcListHtml += `<option value="${v['Village Councils']}">`;
+        });
+      });
+    });
+    document.getElementById('vclist').innerHTML = vcListHtml;
+    
     document.getElementById('galleryFilters').style.display = 'flex'; // Show Gallery Filters
     loadAnalytics();
     loadNonCompliant();
