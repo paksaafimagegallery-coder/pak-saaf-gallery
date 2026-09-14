@@ -161,11 +161,29 @@ function openVC(vcId, vcName) {
   currentVcId = vcId;
   document.getElementById('modalTitle').innerText = `${currentTehsil} → ${vcName}`;
   document.getElementById('modalMeta').innerText = 'Select Date';
-  const dates = []; const today = new Date(); let daysAgo = 1;
-  while(dates.length < 6) { const d = new Date(today); d.setDate(today.getDate() - daysAgo); if (d.getDay() !== 0) dates.push(d.toISOString().split('T')[0]); daysAgo++; }
+  
+  // NEW: Calculate Pakistan Time (PKT) strictly
+  function getPakistanDateString(date = new Date()) {
+    const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
+    const year = pkTime.getUTCFullYear();
+    const month = String(pkTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(pkTime.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  const dates = []; let daysAgo = 0;
+  while(dates.length < 6) { 
+    const d = new Date(); 
+    d.setDate(d.getDate() - daysAgo); 
+    const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000));
+    if (pkDate.getUTCDay() !== 0) { // 0 is Sunday
+      dates.push(getPakistanDateString(d)); 
+    }
+    daysAgo++; 
+  }
+
   document.getElementById('modalBody').innerHTML = `<button class="btn-back" onclick="openTehsil('${escapeHtml(currentTehsil)}')">← Back to VCs</button>
     <div class="grid">` + dates.map(d => `
-      <div class="card" onclick="openDate('${d}')"><div class="card-body"><div class="card-title">${new Date(d).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div><div style="font-size:12px;color:#8a9b91">View Images</div></div></div>`).join('') + `</div>`;
+      <div class="card" onclick="openDate('${d}')"><div class="card-body"><div class="card-title">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div><div style="font-size:12px;color:#8a9b91">View Images</div></div></div>`).join('') + `</div>`;
 }
 
 async function openDate(date) {
