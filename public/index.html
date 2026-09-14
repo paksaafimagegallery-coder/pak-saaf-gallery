@@ -36,6 +36,12 @@ main{max-width:1400px;margin:40px auto;padding:0 24px;flex:1;width:100%}
 .ba-tile img{width:100%;height:100%;object-fit:cover}
 .empty{text-align:center;padding:40px;color:var(--muted)}
 
+/* 2x2 Thumbnail Grid Styles */
+.card-thumb{aspect-ratio:16/10;background:linear-gradient(135deg,var(--bg-soft),#dce8df);position:relative;overflow:hidden; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px}
+.card-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.district-card:hover .card-thumb img{transform:scale(1.05)}
+.card-thumb-empty{grid-column:1 / -1; grid-row:1 / -1; width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f0eb,#d4e3d8);color:var(--primary-dark);font-family:'Poppins';font-size:36px;font-weight:800;opacity:.4}
+
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column}
 .lightbox.active{display:flex}
 .lightbox img{max-width:80%;max-height:80vh;border-radius:4px;box-shadow:0 4px 15px rgba(0,0,0,0.5);object-fit:contain}
@@ -106,6 +112,7 @@ let hierarchy = {};
 let currentDistrict = '', currentTehsil = '', currentVcId = '';
 let lightboxImages = [];
 let lightboxIndex = 0;
+let districtThumbnails = {}; // Store thumbnails here
 
 async function init() {
   const res = await fetch('/api/hierarchy');
@@ -115,6 +122,11 @@ async function init() {
     if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = [];
     hierarchy[v.District][v.Tehsil].push(v);
   });
+  
+  // Fetch the latest thumbnails for all districts
+  const thumbRes = await fetch('/api/district-thumbnails');
+  districtThumbnails = await thumbRes.json();
+  
   renderDistricts();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(err => console.log('SW err', err));
 }
@@ -123,11 +135,20 @@ function renderDistricts() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const districts = Object.keys(hierarchy).filter(d => d.toLowerCase().includes(search));
   document.getElementById('mainTitle').innerText = "District Gallery";
-  document.getElementById('grid').innerHTML = districts.map(d => `
-    <div class="card" onclick="openDistrict('${escapeHtml(d)}')">
-      <div style="height:140px;background:linear-gradient(135deg,#e8f0eb,#d4e3d8);display:flex;align-items:center;justify-content:center;font-family:'Poppins';font-size:36px;font-weight:800;color:#0b6b3a;opacity:.4">${escapeHtml(d.substring(0,2).toUpperCase())}</div>
+  document.getElementById('grid').innerHTML = districts.map(d => {
+    // Build thumbnail HTML (2x2 grid)
+    let thumbHtml = `<div class="card-thumb-empty">${escapeHtml(d.substring(0,2).toUpperCase())}</div>`;
+    const thumbs = districtThumbnails[d];
+    if (thumbs && thumbs.length > 0) {
+      thumbHtml = thumbs.map(url => `<img src="${url}" alt="${escapeHtml(d)}">`).join('');
+    }
+    
+    return `
+    <div class="card district-card" onclick="openDistrict('${escapeHtml(d)}')">
+      <div class="card-thumb">${thumbHtml}</div>
       <div class="card-body"><div class="card-title">${escapeHtml(d)}</div><div style="font-size:12px;color:#8a9b91">View Tehsils</div></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function openDistrict(d) {
@@ -162,7 +183,7 @@ function openVC(vcId, vcName) {
   document.getElementById('modalTitle').innerText = `${currentTehsil} → ${vcName}`;
   document.getElementById('modalMeta').innerText = 'Select Date';
   
-  // NEW: Calculate Pakistan Time (PKT) strictly
+  // Calculate Pakistan Time (PKT) strictly
   function getPakistanDateString(date = new Date()) {
     const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
     const year = pkTime.getUTCFullYear();
