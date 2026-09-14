@@ -135,7 +135,6 @@ app.get('/api/images', async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// RATE LIMITER REMOVED TEMPORARILY FOR DEBUGGING
 app.post('/api/login', async (req, res) => {
   const user = await User.findOne({ username: req.body.username });
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) return res.status(401).json({ msg: 'Invalid credentials' });
@@ -284,13 +283,29 @@ app.get('/api/stats/compliance', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Stats failed' }); }
 });
 
-// --- ZERO COMPLIANCE ROUTE (PKT Fixed) ---
+// --- ZERO COMPLIANCE ROUTE (Date Specific & Overall - Requires 4 Pairs) ---
 app.get('/api/stats/noncompliant', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
-    const recentDates = getRecentPakistanDates(3);
-    const recentVcIds = await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId');
-    const nonCompliantVillages = await Village.find({ _id: { $nin: recentVcIds } }).sort({ District: 1, Tehsil: 1, 'Village Councils': 1 });
+    const selectedDate = req.query.date;
+    
+    // A VC is only compliant if they have 4 pairs (pairs array length is 4)
+    let query = { 'pairs.3': { $exists: true } }; 
+    
+    if (selectedDate === 'overall') {
+      // Check the entire 6-day window
+      const recentDates = getRecentPakistanDates(6);
+      query.date = { $in: recentDates };
+    } else {
+      // Check specific date (or default to today)
+      query.date = selectedDate || getPakistanDateString();
+    }
+    
+    // Find VCs that DID complete 4 pairs
+    const compliantVcIds = await DateEntry.find(query).distinct('vcId');
+    
+    // Find VCs that are NOT in the compliant list
+    const nonCompliantVillages = await Village.find({ _id: { $nin: compliantVcIds } }).sort({ District: 1, Tehsil: 1, 'Village Councils': 1 });
     
     const officers = await User.find({ vcId: { $in: nonCompliantVillages.map(v => v._id) } });
     const officerMap = {};
@@ -299,7 +314,7 @@ app.get('/api/stats/noncompliant', auth, async (req, res) => {
     const result = nonCompliantVillages.map(v => ({
       district: v.District, tehsil: v.Tehsil, vcName: v['Village Councils'], officer: officerMap[v._id] || 'No Account'
     }));
-    res.json({ count: result.length, villages: result });
+    res.json({ count: result.length, villages: result, date: selectedDate });
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
@@ -323,7 +338,7 @@ app.post('/api/upload', auth, (req, res, next) => {
     const vcId = req.user.role === 'admin' ? req.body.vcId : req.user.vcId;
     const { date } = req.body;
     
-    // NEW: SECURITY CHECK - Verify the date is valid and not a Sunday
+    // SECURITY CHECK - Verify the date is valid and not a Sunday
     const recentValidDates = getRecentPakistanDates(6);
     if (!recentValidDates.includes(date)) {
       // If the date is not in the allowed 6 days, delete any uploaded files and reject
