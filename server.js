@@ -14,8 +14,11 @@ const PDFDocument = require('pdfkit');
 
 const app = express();
 
-
-app.use(helmet({contentSecurityPolicy: false,}));
+// --- Security Middleware ---
+// CSP is disabled to allow inline script buttons (onclick) to work properly in the browser
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -23,6 +26,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('MongoDB Error:', err));
 
+// --- Models ---
 const Village = mongoose.model('Village', new mongoose.Schema({
   District: String, 
   Tehsil: String, 
@@ -58,10 +62,14 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: { folder: 'pak-saaf-gallery', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
 });
-const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 } });
+// SECURITY FIX: Enforce 500KB server-side limit to prevent compression bypass
+const upload = multer({ 
+  storage: storage, 
+  limits: { fileSize: 500 * 1024 } 
+});
 
 function auth(req, res, next) {
-  // Check both the Authorization header AND the URL query parameter
+  // Check both the Authorization header AND the URL query parameter (for CSV download)
   const token = req.header('Authorization') || req.query.token;
   if (!token) return res.status(401).json({ msg: 'No token' });
   try {
@@ -70,6 +78,8 @@ function auth(req, res, next) {
   } catch (e) { res.status(403).json({ msg: 'Invalid or expired token' }); }
 }
 
+// --- Pakistan Standard Time (PKT) Date Helpers ---
+// This ensures the 12 AM rollover and Sunday skips happen strictly on Pakistan Time
 function getPakistanDateString(date = new Date()) {
   const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
   const year = pkTime.getUTCFullYear();
@@ -84,7 +94,7 @@ function getRecentPakistanDates(count) {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000));
-    if (pkDate.getUTCDay() !== 0) { 
+    if (pkDate.getUTCDay() !== 0) { // 0 is Sunday
       dates.push(getPakistanDateString(d));
     }
     daysAgo++;
@@ -92,12 +102,13 @@ function getRecentPakistanDates(count) {
   return dates;
 }
 
+// --- AUTO-DELETE LOGIC (6 Days Rolling Window per VC) ---
 async function cleanupOldDates() {
   try {
     const vcIds = await DateEntry.distinct('vcId');
     for (const vcId of vcIds) {
       const entries = await DateEntry.find({ vcId }).sort({ date: -1 });
-      const entriesToDelete = entries.slice(6);
+      const entriesToDelete = entries.slice(6); // Keep 6 days
       for (const entry of entriesToDelete) {
         for (const pair of entry.pairs) {
           await cloudinary.uploader.destroy(pair.before.cloudinaryId);
@@ -111,6 +122,7 @@ async function cleanupOldDates() {
 cleanupOldDates();
 setInterval(cleanupOldDates, 60 * 60 * 1000);
 
+// --- Routes ---
 app.get('/api/hierarchy', async (req, res) => { try { res.json(await Village.find()); } catch(e) { res.json([]); } });
 
 app.get('/api/images', async (req, res) => {
@@ -190,7 +202,7 @@ app.post('/api/users/generate', auth, async (req, res) => {
     const districtCounters = {};
     const newUsers = [];
     
-    // FIX: HASH THE PASSWORD ONLY ONCE (Takes 0.1 seconds instead of 6 minutes!)
+    // OPTIMIZATION: Hash the password only ONCE to save server CPU time
     const hashedPassword = await bcrypt.hash('12345', 10);
     
     for (const v of villages) {
@@ -205,7 +217,7 @@ app.post('/api/users/generate', auth, async (req, res) => {
       existingUsernames.add(username);
       newUsers.push({ 
         username, 
-        password: hashedPassword, // Reuse the same hash
+        password: hashedPassword, 
         role: 'officer', 
         vcId: v._id, 
         district: v.District, 
@@ -249,6 +261,7 @@ app.get('/api/users/csv', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
+// --- ANALYTICS ROUTE (PKT Fixed) ---
 app.get('/api/stats/compliance', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -271,6 +284,7 @@ app.get('/api/stats/compliance', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Stats failed' }); }
 });
 
+// --- ZERO COMPLIANCE ROUTE (PKT Fixed) ---
 app.get('/api/stats/noncompliant', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -289,6 +303,7 @@ app.get('/api/stats/noncompliant', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
+// --- UPLOAD LOGIC (With Orphan Cleanup, Multer Error Handler, & Strict Date Validation) ---
 app.post('/api/upload', auth, (req, res, next) => {
   upload.fields([
     { name: 'pair1_before', maxCount: 1 }, { name: 'pair1_after', maxCount: 1 },
@@ -307,6 +322,15 @@ app.post('/api/upload', auth, (req, res, next) => {
   try {
     const vcId = req.user.role === 'admin' ? req.body.vcId : req.user.vcId;
     const { date } = req.body;
+    
+    // NEW: SECURITY CHECK - Verify the date is valid and not a Sunday
+    const recentValidDates = getRecentPakistanDates(6);
+    if (!recentValidDates.includes(date)) {
+      // If the date is not in the allowed 6 days, delete any uploaded files and reject
+      if (req.files) Object.values(req.files).flat().forEach(f => cloudinary.uploader.destroy(f.filename));
+      return res.status(400).json({ msg: 'Invalid date. You can only upload for the current or last 5 working days (Sundays skipped).' });
+    }
+
     let entry = await DateEntry.findOne({ vcId, date });
     let isNew = false;
     
@@ -340,6 +364,7 @@ app.post('/api/upload', auth, (req, res, next) => {
     
     if (uploadedCount === 0 && !isNew) return res.json({ msg: rejectedMsg || 'No new pairs uploaded.' });
 
+    // SECURITY FIX: If DB fails, delete from Cloudinary to prevent orphans
     try {
       await entry.save();
     } catch (dbErr) {
@@ -371,6 +396,7 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ msg: 'Failed' }); }
 });
 
+// --- PDF & ZIP ARCHIVE ROUTES ---
 app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
