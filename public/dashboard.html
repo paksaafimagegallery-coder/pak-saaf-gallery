@@ -51,7 +51,6 @@ footer strong{color:#d4af37}
         <select id="tehsilSelect" onchange="updateVCs()"></select>
         <select id="vcSelect"></select>
       </div>
-      <!-- Date Dropdown replaces open Calendar to enforce PKT 12AM rollover and block Sundays -->
       <select id="date" required></select>
       <div id="pairUploaders"></div>
       <button class="btn" onclick="uploadImages()">Upload to Cloud</button>
@@ -73,7 +72,6 @@ footer strong{color:#d4af37}
     <div class="card">
       <h2 style="margin-top:0">Manage Images</h2>
       
-      <!-- Independent Filters for Gallery -->
       <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px; align-items:center;">
         <input type="text" id="g_vc_search" list="vclist" placeholder="Type VC name (e.g. Akhroota)..." style="flex:2; min-width:200px; margin-bottom:0; padding:11px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
         <datalist id="vclist"></datalist>
@@ -87,13 +85,16 @@ footer strong{color:#d4af37}
 
   <!-- Zero Compliance Alert Panel -->
   <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
-    <h2 style="margin-top:0;color:#d32f2f">🚨 Zero Compliance Alert (Last 3 Days)</h2>
-    <p style="color:#8a9b91;font-size:13px;margin-bottom:15px">The following VCs have NOT uploaded any images in the last 3 working days.</p>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-      <h3 id="nonCompliantCount" style="margin:0;font-size:18px">Total: 0 VCs</h3>
-      <button class="btn-red" style="width:auto;padding:8px 16px" onclick="downloadNonCompliantCSV()">⬇ Export Slackers CSV</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:15px;">
+      <h2 style="margin:0; color:#d32f2f" id="nonCompliantTitle">🚨 Zero Compliance Alert</h2>
+      <select id="nonCompliantDateSelect" onchange="loadNonCompliant()" style="width:auto; margin:0; padding:8px; border:1.5px solid #d32f2f; border-radius:8px; background:#fff; color:#d32f2f; font-weight:600;"></select>
     </div>
-    <div style="max-height:400px;overflow-y:auto;border:1px solid #eaf3ee;border-radius:8px">
+    <p style="color:#8a9b91; font-size:13px; margin-bottom:15px">The following VCs have NOT completed their 4 pairs for the selected date.</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+      <h3 id="nonCompliantCount" style="margin:0; font-size:18px">Total: 0 VCs</h3>
+      <button class="btn-red" style="width:auto; padding:8px 16px" onclick="downloadNonCompliantCSV()">⬇ Export Slackers CSV</button>
+    </div>
+    <div style="max-height:400px; overflow-y:auto; border:1px solid #eaf3ee; border-radius:8px">
       <table class="non-compliant-table"><thead><tr><th>District</th><th>Tehsil</th><th>Village Council</th><th>Officer</th></tr></thead><tbody id="nonCompliantBody"></tbody></table>
     </div>
   </div>
@@ -263,7 +264,7 @@ function getRecentPakistanDates(count) {
 async function init() {
   buildUploaders();
   
-  // Populate PKT Date Dropdowns for both Upload Form and Manage Images Filter
+  // Populate PKT Date Dropdowns for Upload Form and Manage Images Filter
   const recentDates = getRecentPakistanDates(6);
   const dateOptionsHtml = recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
   document.getElementById('date').innerHTML = dateOptionsHtml;
@@ -294,7 +295,12 @@ async function init() {
       });
     });
     document.getElementById('vclist').innerHTML = vcListHtml;
-    
+
+    // Populate Non-Compliant Date Dropdown (Defaults to Today, with Overall option)
+    let ncDateHtml = '<option value="overall">Overall (Last 6 Days)</option>';
+    ncDateHtml += recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
+    document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
+
     loadAnalytics();
     loadNonCompliant();
   }
@@ -318,9 +324,20 @@ async function loadAnalytics() {
 }
 
 async function loadNonCompliant() {
-  const res = await fetch('/api/stats/noncompliant', { headers: { 'Authorization': 'Bearer ' + token } });
+  const selectedDate = document.getElementById('nonCompliantDateSelect').value;
+  if (!selectedDate) return;
+  
+  const res = await fetch(`/api/stats/noncompliant?date=${selectedDate}`, { headers: { 'Authorization': 'Bearer ' + token } });
   const data = await res.json();
   nonCompliantData = data.villages;
+  
+  if (selectedDate === 'overall') {
+    document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Overall - Last 6 Days)`;
+  } else {
+    const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Date: ${formattedDate})`;
+  }
+  
   document.getElementById('nonCompliantCount').innerText = `Total: ${data.count} VCs`;
   document.getElementById('nonCompliantBody').innerHTML = data.villages.map(v => `
     <tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');
@@ -384,7 +401,6 @@ async function loadGallery() {
     if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
     html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
     e.pairs.forEach(p => {
-      // Generate tiny 5KB thumbnails for dashboard
       const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
