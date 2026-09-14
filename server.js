@@ -125,6 +125,32 @@ setInterval(cleanupOldDates, 60 * 60 * 1000);
 // --- Routes ---
 app.get('/api/hierarchy', async (req, res) => { try { res.json(await Village.find()); } catch(e) { res.json([]); } });
 
+// --- DISTRICT THUMBNAILS API (Optimized for speed) ---
+app.get('/api/district-thumbnails', async (req, res) => {
+  try {
+    // Use MongoDB Aggregation to find the latest upload per district efficiently
+    const pipeline = [
+      { $sort: { date: -1 } },
+      { $lookup: { from: "villages", localField: "vcId", foreignField: "_id", as: "village" } },
+      { $unwind: "$village" },
+      { $group: { _id: "$village.District", latestEntry: { $first: "$$ROOT" } } }
+    ];
+    const results = await DateEntry.aggregate(pipeline);
+    
+    const thumbnails = {};
+    results.forEach(r => {
+      const pairs = r.latestEntry.pairs;
+      if (pairs && pairs.length > 0) {
+        // Get up to 4 image URLs and apply Cloudinary thumbnail transformation (w_200,h_125,c_fill)
+        thumbnails[r._id] = pairs.slice(0, 4).map(p => p.before.url.replace('/upload/', '/upload/w_200,h_125,c_fill/'));
+      }
+    });
+    res.json(thumbnails);
+  } catch (e) {
+    res.json({}); // Return empty object on error so frontend doesn't crash
+  }
+});
+
 app.get('/api/images', async (req, res) => {
   try {
     const { vcId, date } = req.query;
