@@ -101,16 +101,27 @@ footer strong{color:#d4af37}
 
   <div class="card" id="archiveCard" style="display:none">
     <h2 style="margin-top:0">🗄️ Data Archive Center (Admin Only)</h2>
-    <p style="color:#8a9b91;font-size:13px;margin-bottom:20px">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them.</p>
+    <p style="color:#8a9b91;font-size:13px;margin-bottom:20px">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them. <br><strong style="color:#d32f2f">Note:</strong> PDFs are limited to 50 images per file to prevent server timeouts. For bulk downloads, use ZIP.</p>
     
-    <h3 style="margin-bottom:10px">Download PDF Report (Tehsil-wise)</h3>
+    <h3 style="margin-bottom:10px">1. Tehsil-wise PDF Report</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="flex:1;margin-bottom:0"></select>
       <select id="pdfTehsilSelect" style="flex:1;margin-bottom:0"></select>
-      <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadPDF()">📄 Download PDF</button>
+      <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadPDF()">📄 Download</button>
     </div>
     
-    <h3 style="margin-bottom:10px">Download ZIP Archive (District-wise)</h3>
+    <h3 style="margin-bottom:10px">2. District-wise PDF Report</h3>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <select id="pdfDistOnlySelect" style="flex:1;margin-bottom:0"></select>
+      <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadDistrictPDF()">📄 Download District PDF</button>
+    </div>
+    
+    <h3 style="margin-bottom:10px">3. Overall Provincial PDF Report</h3>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadOverallPDF()">📄 Download Overall PDF</button>
+    </div>
+    
+    <h3 style="margin-bottom:10px">4. ZIP Archive (District-wise)</h3>
     <div style="display:flex;gap:10px">
       <select id="zipDistSelect" style="flex:1;margin-bottom:0"></select>
       <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadZip()">⬇ Download ZIP</button>
@@ -283,6 +294,7 @@ async function init() {
     document.getElementById('distSelect').innerHTML = dHtml;
     document.getElementById('newDistSelect').innerHTML = dHtml;
     document.getElementById('pdfDistSelect').innerHTML = dHtml;
+    document.getElementById('pdfDistOnlySelect').innerHTML = dHtml;
     document.getElementById('zipDistSelect').innerHTML = dHtml;
     
     // Populate Search Datalist for Gallery
@@ -499,14 +511,47 @@ async function deleteUser(id) { if(!confirm('Delete this user?')) return; await 
 async function downloadPDF() {
   const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value;
   if(!d || !t) return alert('Please select District and Tehsil first.');
-  document.getElementById('archiveMsg').innerText = 'Generating PDF... This may take 30-60 seconds depending on data size.';
+  document.getElementById('archiveMsg').innerText = 'Generating Tehsil PDF... This may take 30-60 seconds depending on data size.';
   try {
     const res = await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) throw new Error('Failed');
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
+    }
     const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `${d}_${t}_6Day_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ PDF downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate PDF.'; }
+    a.href = url; a.download = `${d}_${t}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ Tehsil PDF downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
+}
+
+async function downloadDistrictPDF() {
+  const d = document.getElementById('pdfDistOnlySelect').value;
+  if(!d) return alert('Please select a District first.');
+  document.getElementById('archiveMsg').innerText = 'Generating District PDF... This may take 30-60 seconds depending on data size.';
+  try {
+    const res = await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
+    }
+    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `${d}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ District PDF downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
+}
+
+async function downloadOverallPDF() {
+  document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial PDF... This may take 60+ seconds.';
+  try {
+    const res = await fetch(`/api/download/pdf/overall`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
+    }
+    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `Overall_Provincial_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ Overall PDF downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
 }
 
 async function downloadZip() {
