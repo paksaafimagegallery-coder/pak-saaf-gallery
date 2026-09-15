@@ -201,18 +201,36 @@ app.post('/api/register', async (req, res) => {
   } catch (e) { res.status(400).json({ msg: e.code === 11000 ? 'Duplicate detected.' : 'Error creating user' }); }
 });
 
+// --- USER PAGINATED ROUTE (With Date Filter & Pairs Status) ---
 app.get('/api/users/paginated', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 50; 
     const search = req.query.search || '';
+    const dateFilter = req.query.date || '';
+    
     let query = { role: 'officer' };
     if (search) {
       query = { role: 'officer', $or: [{ username: { $regex: search, $options: 'i' } }, { vcName: { $regex: search, $options: 'i' } }] };
     }
+    
     const totalUsers = await User.countDocuments(query);
-    const users = await User.find(query).select('-password').skip((page - 1) * limit).limit(limit);
+    // Use .lean() so we can attach a dynamic upload status to the user objects
+    const users = await User.find(query).select('-password').skip((page - 1) * limit).limit(limit).lean();
+    
+    // NEW: If a date is selected, fetch the upload count for these 50 users on that date
+    if (dateFilter && users.length > 0) {
+      const vcIds = users.map(u => u.vcId).filter(id => id);
+      const entries = await DateEntry.find({ vcId: { $in: vcIds }, date: dateFilter });
+      const entryMap = {};
+      entries.forEach(e => entryMap[e.vcId.toString()] = e.pairs.length);
+      
+      users.forEach(u => {
+        u.uploadedPairs = u.vcId ? (entryMap[u.vcId.toString()] || 0) : 0;
+      });
+    }
+    
     res.json({ users, totalPages: Math.ceil(totalUsers / limit), currentPage: page, totalUsers });
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
@@ -570,7 +588,7 @@ app.get('/api/download/zip/district/:district', auth, async (req, res) => {
   } catch (err) { res.status(500).send('Failed'); }
 });
 
-// 5. Overall Provincial ZIP Archive (NEW)
+// 5. Overall Provincial ZIP Archive
 app.get('/api/download/zip/overall', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
