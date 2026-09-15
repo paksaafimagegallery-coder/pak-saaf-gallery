@@ -349,7 +349,10 @@ async function init() {
     document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
   }
   
-  loadGallery(); // Initial load (will show selected date or default to today)
+  // Prevent auto-loading to save bandwidth.
+  // Just show a placeholder message until the user clicks "Load Images".
+  document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a date and click Load Images to view data.</p>';
+  
   if(userRole === 'admin') loadUsers();
 }
 
