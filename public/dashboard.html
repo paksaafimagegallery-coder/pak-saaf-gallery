@@ -122,10 +122,16 @@ footer strong{color:#d4af37}
     </div>
     
     <h3 style="margin-bottom:10px">4. ZIP Archive (District-wise)</h3>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px;margin-bottom:20px">
       <select id="zipDistSelect" style="flex:1;margin-bottom:0"></select>
       <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadZip()">⬇ Download ZIP</button>
     </div>
+
+    <h3 style="margin-bottom:10px">5. Overall Provincial ZIP Archive</h3>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadOverallZip()">⬇ Download Overall ZIP</button>
+    </div>
+
     <p id="archiveMsg" style="font-size:14px;margin-top:15px;text-align:center"></p>
   </div>
 
@@ -565,6 +571,17 @@ async function downloadZip() {
     a.href = url; a.download = `${d}_6Day_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
     document.getElementById('archiveMsg').innerText = '✅ ZIP Archive downloaded successfully!';
   } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate ZIP.'; }
+}
+
+async function downloadOverallZip() {
+  document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial ZIP... This may take several minutes depending on data size.';
+  try {
+    const res = await fetch(`/api/download/zip/overall`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('Failed');
+    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `Overall_Provincial_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    document.getElementById('archiveMsg').innerText = '✅ Overall ZIP Archive downloaded successfully!';
+  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate Overall ZIP.'; }
 }
 
 init();
