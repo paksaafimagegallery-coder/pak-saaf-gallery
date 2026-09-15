@@ -23,11 +23,8 @@ table{width:100%;border-collapse:collapse;margin-top:15px}th,td{padding:10px;bor
 .stat-box{flex:1;min-width:150px;background:#eaf3ee;padding:20px;border-radius:8px;text-align:center}
 .stat-box h3{margin:0;color:#074822;font-size:18px}.stat-box p{margin:5px 0 0;color:#8a9b91;font-size:13px}
 .chart-container{height:300px;width:100%}
-
-/* Non-Compliance Panel Styles */
 .non-compliant-card{border:2px solid #d32f2f;background:#fff5f5}
 .non-compliant-table th{color:#d32f2f}
-
 footer{background:#074822;color:rgba(255,255,255,0.8);padding:24px;text-align:center;font-size:13px;margin-top:auto}
 footer strong{color:#d4af37}
 </style>
@@ -72,19 +69,16 @@ footer strong{color:#d4af37}
     <div class="card">
       <h2 style="margin-top:0">Manage Images</h2>
       <p id="officerVcName" style="display:none; color:#8a9b91; font-size:14px; margin-bottom:15px;">Your Village Council: <strong></strong></p>
-      
       <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px; align-items:center;">
         <input type="text" id="g_vc_search" list="vclist" placeholder="Type VC name (e.g. Akhroota)..." style="flex:2; min-width:200px; margin-bottom:0; padding:11px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
         <datalist id="vclist"></datalist>
         <select id="g_date" style="flex:1; min-width:140px; margin-bottom:0;"></select>
         <button class="btn" style="width:auto; padding:11px 20px; margin-bottom:0;" onclick="loadGallery()">🔍 Load Images</button>
       </div>
-      
       <div id="adminGallery"></div>
     </div>
   </div>
 
-  <!-- Zero Compliance Alert Panel -->
   <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:15px;">
       <h2 style="margin:0; color:#d32f2f" id="nonCompliantTitle">🚨 Zero Compliance Alert</h2>
@@ -103,36 +97,30 @@ footer strong{color:#d4af37}
   <div class="card" id="archiveCard" style="display:none">
     <h2 style="margin-top:0">🗄️ Data Archive Center (Admin Only)</h2>
     <p style="color:#8a9b91;font-size:13px;margin-bottom:20px">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them. <br><strong style="color:#d32f2f">Note:</strong> PDFs are limited to 50 images per file to prevent server timeouts. For bulk downloads, use ZIP.</p>
-    
     <h3 style="margin-bottom:10px">1. Tehsil-wise PDF Report</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="flex:1;margin-bottom:0"></select>
       <select id="pdfTehsilSelect" style="flex:1;margin-bottom:0"></select>
       <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadPDF()">📄 Download</button>
     </div>
-    
     <h3 style="margin-bottom:10px">2. District-wise PDF Report</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <select id="pdfDistOnlySelect" style="flex:1;margin-bottom:0"></select>
       <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadDistrictPDF()">📄 Download District PDF</button>
     </div>
-    
     <h3 style="margin-bottom:10px">3. Overall Provincial PDF Report</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <button class="btn-gold" style="width:auto;padding:10px 20px" onclick="downloadOverallPDF()">📄 Download Overall PDF</button>
     </div>
-    
     <h3 style="margin-bottom:10px">4. ZIP Archive (District-wise)</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <select id="zipDistSelect" style="flex:1;margin-bottom:0"></select>
       <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadZip()">⬇ Download ZIP</button>
     </div>
-
     <h3 style="margin-bottom:10px">5. Overall Provincial ZIP Archive</h3>
     <div style="display:flex;gap:10px;margin-bottom:20px">
       <button class="btn" style="width:auto;padding:10px 20px" onclick="downloadOverallZip()">⬇ Download Overall ZIP</button>
     </div>
-
     <p id="archiveMsg" style="font-size:14px;margin-top:15px;text-align:center"></p>
   </div>
 
@@ -154,7 +142,6 @@ footer strong{color:#d4af37}
     </div>
     <button class="btn" style="width:auto;padding:10px 20px;margin-bottom:15px" onclick="createUser()">Add User</button>
     <p id="userMsg" style="font-size:14px;margin-bottom:15px"></p>
-    
     <div style="display:flex; gap:15px; margin-bottom:15px; align-items:center; flex-wrap:wrap;">
       <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:0; flex:2; min-width:200px;">
       <select id="userDateFilter" onchange="currentUserPage=1; loadUsers()" style="margin-bottom:0; flex:1; min-width:150px;">
@@ -190,64 +177,38 @@ let hierarchy = {}, userRole = localStorage.getItem('role'), token = localStorag
 let currentUserPage = 1;
 let nonCompliantData = [];
 
-// --- IndexedDB Setup for Offline Uploads ---
 let db;
 const request = indexedDB.open('pakSaafDB', 1);
 request.onupgradeneeded = (event) => {
   db = event.target.result;
-  if (!db.objectStoreNames.contains('pendingUploads')) {
-    db.createObjectStore('pendingUploads', { keyPath: 'id', autoIncrement: true });
-  }
+  if (!db.objectStoreNames.contains('pendingUploads')) db.createObjectStore('pendingUploads', { keyPath: 'id', autoIncrement: true });
 };
-request.onsuccess = (event) => {
-  db = event.target.result;
-  if (navigator.onLine) syncPendingUploads();
-};
+request.onsuccess = (event) => { db = event.target.result; if (navigator.onLine) syncPendingUploads(); };
 window.addEventListener('online', syncPendingUploads);
 
 function saveOfflineUpload(dataObj) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('pendingUploads', 'readwrite');
-    const store = tx.objectStore('pendingUploads');
-    const req = store.add(dataObj);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    const tx = db.transaction('pendingUploads', 'readwrite'); const store = tx.objectStore('pendingUploads');
+    const req = store.add(dataObj); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error);
   });
 }
-
 async function syncPendingUploads() {
-  if (!db) return;
-  const token = localStorage.getItem('token');
-  if (!token) {
-    msg.innerText = '❌ Session expired. Please log in again to sync offline data.';
-    return;
-  }
-  
-  const tx = db.transaction('pendingUploads', 'readonly');
-  const store = tx.objectStore('pendingUploads');
+  if (!db) return; const token = localStorage.getItem('token');
+  if (!token) { msg.innerText = '❌ Session expired. Please log in again to sync offline data.'; return; }
+  const tx = db.transaction('pendingUploads', 'readonly'); const store = tx.objectStore('pendingUploads');
   const allReq = store.getAll();
   allReq.onsuccess = async () => {
     const pending = allReq.result;
     if (pending.length > 0) {
       msg.innerText = '🔄 Syncing offline uploads...';
       for (const item of pending) {
-        const formData = new FormData();
-        formData.append('vcId', item.vcId);
-        formData.append('date', item.date);
-        for(let i=1; i<=4; i++) {
-          if(item[`pair${i}_before`]) formData.append(`pair${i}_before`, item[`pair${i}_before`]);
-          if(item[`pair${i}_after`]) formData.append(`pair${i}_after`, item[`pair${i}_after`]);
-        }
+        const formData = new FormData(); formData.append('vcId', item.vcId); formData.append('date', item.date);
+        for(let i=1; i<=4; i++) { if(item[`pair${i}_before`]) formData.append(`pair${i}_before`, item[`pair${i}_before`]); if(item[`pair${i}_after`]) formData.append(`pair${i}_after`, item[`pair${i}_after`]); }
         const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
-        if (res.status === 401 || res.status === 403) {
-          msg.innerText = '❌ Session expired! Please log in again to sync.';
-          return;
-        }
+        if (res.status === 401 || res.status === 403) { msg.innerText = '❌ Session expired! Please log in again to sync.'; return; }
       }
-      const clearTx = db.transaction('pendingUploads', 'readwrite');
-      clearTx.objectStore('pendingUploads').clear();
-      msg.innerText = '✅ Offline uploads synced successfully!';
-      loadGallery();
+      const clearTx = db.transaction('pendingUploads', 'readwrite'); clearTx.objectStore('pendingUploads').clear();
+      msg.innerText = '✅ Offline uploads synced successfully!'; loadGallery();
     }
   };
 }
@@ -261,100 +222,44 @@ if (userRole === 'admin') {
 } else {
   document.getElementById('distName').innerText = `${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;
 }
-
 function logout() { localStorage.clear(); window.location.href = '/login.html'; }
+function buildUploaders() { let html = ''; for(let i=1; i<=4; i++) html += `<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`; document.getElementById('pairUploaders').innerHTML = html; }
 
-function buildUploaders() {
-  let html = '';
-  for(let i=1; i<=4; i++) html += `<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`;
-  document.getElementById('pairUploaders').innerHTML = html;
-}
-
-// --- PKT Date Generation ---
-function getPakistanDateString(date = new Date()) {
-  const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
-  const year = pkTime.getUTCFullYear();
-  const month = String(pkTime.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(pkTime.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-function getRecentPakistanDates(count) {
-  const dates = [];
-  let daysAgo = 0;
-  while(dates.length < count) {
-    const d = new Date();
-    d.setDate(d.getDate() - daysAgo);
-    const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000));
-    if (pkDate.getUTCDay() !== 0) { 
-      dates.push(getPakistanDateString(d));
-    }
-    daysAgo++;
-  }
-  return dates;
-}
+function getPakistanDateString(date = new Date()) { const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000)); const year = pkTime.getUTCFullYear(); const month = String(pkTime.getUTCMonth() + 1).padStart(2, '0'); const day = String(pkTime.getUTCDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
+function getRecentPakistanDates(count) { const dates = []; let daysAgo = 0; while(dates.length < count) { const d = new Date(); d.setDate(d.getDate() - daysAgo); const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000)); if (pkDate.getUTCDay() !== 0) { dates.push(getPakistanDateString(d)); } daysAgo++; } return dates; }
 
 async function init() {
   buildUploaders();
-  
-  // Populate PKT Date Dropdowns for Upload Form and Manage Images Filter
   const recentDates = getRecentPakistanDates(6);
   const dateOptionsHtml = recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
   document.getElementById('date').innerHTML = dateOptionsHtml;
   document.getElementById('g_date').innerHTML = '<option value="">All Dates</option>' + dateOptionsHtml;
 
-  const res = await fetch('/api/hierarchy');
-  const villages = await res.json();
-  villages.forEach(v => {
-    if (!hierarchy[v.District]) hierarchy[v.District] = {};
-    if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = [];
-    hierarchy[v.District][v.Tehsil].push(v);
-  });
+  const res = await fetch('/api/hierarchy'); const villages = await res.json();
+  villages.forEach(v => { if (!hierarchy[v.District]) hierarchy[v.District] = {}; if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = []; hierarchy[v.District][v.Tehsil].push(v); });
   
   if (userRole === 'admin') {
     let dHtml = '<option value="">Select District</option>';
     Object.keys(hierarchy).forEach(d => dHtml += `<option>${d}</option>`);
-    document.getElementById('distSelect').innerHTML = dHtml;
-    document.getElementById('newDistSelect').innerHTML = dHtml;
-    document.getElementById('pdfDistSelect').innerHTML = dHtml;
-    document.getElementById('pdfDistOnlySelect').innerHTML = dHtml;
-    document.getElementById('zipDistSelect').innerHTML = dHtml;
-    
-    // Populate Search Datalist for Gallery
+    document.getElementById('distSelect').innerHTML = dHtml; document.getElementById('newDistSelect').innerHTML = dHtml;
+    document.getElementById('pdfDistSelect').innerHTML = dHtml; document.getElementById('pdfDistOnlySelect').innerHTML = dHtml; document.getElementById('zipDistSelect').innerHTML = dHtml;
     let vcListHtml = '';
-    Object.keys(hierarchy).forEach(d => {
-      Object.keys(hierarchy[d]).forEach(t => {
-        hierarchy[d][t].forEach(v => {
-          vcListHtml += `<option value="${v['Village Councils']}">`;
-        });
-      });
-    });
+    Object.keys(hierarchy).forEach(d => { Object.keys(hierarchy[d]).forEach(t => { hierarchy[d][t].forEach(v => { vcListHtml += `<option value="${v['Village Councils']}">`; }); }); });
     document.getElementById('vclist').innerHTML = vcListHtml;
-
-    // Populate Non-Compliant Date Dropdown (Defaults to Today, with Overall option)
     let ncDateHtml = '<option value="overall">Overall (Last 6 Days)</option>';
     ncDateHtml += recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
     document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
-
-    // Populate User Management Date Filter
     document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
-
-    document.getElementById('galleryFilters').style.display = 'flex'; // Show filters for Admin
+    document.getElementById('galleryFilters').style.display = 'flex';
     loadNonCompliant();
   } else {
-    // Show Date Filter and VC Name for Officers
     document.getElementById('galleryFilters').style.display = 'flex'; 
-    document.getElementById('g_vc_search').style.display = 'none'; // Hide the VC search bar for officers
+    document.getElementById('g_vc_search').style.display = 'none'; 
     document.getElementById('officerVcName').style.display = 'block';
     document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
   }
-  
-  // Load analytics for BOTH Admin and Officer
   loadAnalytics();
-  
-  // Prevent auto-loading to save bandwidth.
-  // Just show a placeholder message until the user clicks "Load Images".
   document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a date and click Load Images to view data.</p>';
-  
   if(userRole === 'admin') loadUsers();
 }
 
@@ -367,22 +272,13 @@ async function loadAnalytics() {
   if(chartInstance) chartInstance.destroy();
   const ctx = document.getElementById('districtChart').getContext('2d');
   
-  // Custom Plugin to draw percentage labels on top of the bars
   const dataLabelPlugin = {
     id: 'dataLabelPlugin',
     afterDatasetsDraw(chart) {
-      const { ctx } = chart;
-      ctx.save();
-      ctx.font = 'bold 12px Inter';
-      ctx.fillStyle = '#074822';
-      ctx.textAlign = 'center';
+      const { ctx } = chart; ctx.save(); ctx.font = 'bold 12px Inter'; ctx.fillStyle = '#074822'; ctx.textAlign = 'center';
       chart.data.datasets[0].data.forEach((value, index) => {
-        const meta = chart.getDatasetMeta(0);
-        const bar = meta.data[index];
-        // Only draw if the bar exists
-        if (bar) {
-          ctx.fillText(value + '%', bar.x, bar.y - 8);
-        }
+        const meta = chart.getDatasetMeta(0); const bar = meta.data[index];
+        if (bar) ctx.fillText(value + '%', bar.x, bar.y - 8);
       });
       ctx.restore();
     }
@@ -391,74 +287,42 @@ async function loadAnalytics() {
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: { 
-      labels: data.districts.map(d => d.name), 
+      labels: data.chartLabels, // Use the 6 dates as labels
       datasets: [{ 
-        label: 'Compliance % (6 Days)', 
-        data: data.districts.map(d => d.compliance), 
+        label: 'Daily Compliance %', 
+        data: data.chartData, 
         backgroundColor: '#0b6b3a',
         borderRadius: 4
       }] 
     },
     options: { 
-      responsive: true, 
-      maintainAspectRatio: false, 
+      responsive: true, maintainAspectRatio: false, 
       plugins: {
         legend: { display: true, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + context.raw + '%';
-            }
-          }
-        }
+        tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.raw + '%'; } } }
       },
       scales: { 
         y: { 
-          beginAtZero: true, 
-          max: 100,
-          ticks: {
-            callback: function(value) {
-              return value + '%'; // Append '%' to Y-axis labels
-            }
-          }
+          beginAtZero: true, max: 100,
+          ticks: { callback: function(value) { return value + '%'; } }
         } 
       } 
     },
-    plugins: [dataLabelPlugin] // Register the custom plugin
+    plugins: [dataLabelPlugin]
   });
 }
 
 async function loadNonCompliant() {
   const selectedDate = document.getElementById('nonCompliantDateSelect').value;
   if (!selectedDate) return;
-  
   const res = await fetch(`/api/stats/noncompliant?date=${selectedDate}`, { headers: { 'Authorization': 'Bearer ' + token } });
-  const data = await res.json();
-  nonCompliantData = data.villages;
-  
-  if (selectedDate === 'overall') {
-    document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Overall - Last 6 Days)`;
-  } else {
-    const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-    document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Date: ${formattedDate})`;
-  }
-  
+  const data = await res.json(); nonCompliantData = data.villages;
+  if (selectedDate === 'overall') document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Overall - Last 6 Days)`;
+  else { const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }); document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Date: ${formattedDate})`; }
   document.getElementById('nonCompliantCount').innerText = `Total: ${data.count} VCs`;
-  document.getElementById('nonCompliantBody').innerHTML = data.villages.map(v => `
-    <tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');
+  document.getElementById('nonCompliantBody').innerHTML = data.villages.map(v => `<tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');
 }
-
-function downloadNonCompliantCSV() {
-  let csv = 'District,Tehsil,Village Council,Assigned Officer\n';
-  nonCompliantData.forEach(v => {
-    csv += `${v.district},${v.tehsil},${v.vcName},${v.officer}\n`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'Non_Compliant_VCs.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-}
+function downloadNonCompliantCSV() { let csv = 'District,Tehsil,Village Council,Assigned Officer\n'; nonCompliantData.forEach(v => { csv += `${v.district},${v.tehsil},${v.vcName},${v.officer}\n`; }); const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Non_Compliant_VCs.csv'; document.body.appendChild(a); a.click(); a.remove(); }
 
 function updateTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[distSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('tehsilSelect').innerHTML = tHtml; document.getElementById('vcSelect').innerHTML = ''; }
 function updateVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[distSelect.value][tehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v['Village Councils']}</option>`); document.getElementById('vcSelect').innerHTML = vHtml; }
@@ -467,226 +331,83 @@ function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hi
 function updatePdfTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[pdfDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('pdfTehsilSelect').innerHTML = tHtml; }
 
 async function loadGallery() {
-  let targetVcId = vcId; // Default for officers
-  
+  let targetVcId = vcId;
   if (userRole === 'admin') {
     const searchName = document.getElementById('g_vc_search').value.toLowerCase();
-    if (!searchName) {
-      document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please type a VC name and click Load Images.</p>';
-      return;
-    }
-    
+    if (!searchName) { document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please type a VC name and click Load Images.</p>'; return; }
     let foundVc = null;
-    for (const d in hierarchy) {
-      for (const t in hierarchy[d]) {
-        foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName));
-        if (foundVc) break;
-      }
-      if (foundVc) break;
-    }
-    
-    if (!foundVc) {
-      document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">No Village Council found with that name.</p>';
-      return;
-    }
+    for (const d in hierarchy) { for (const t in hierarchy[d]) { foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName)); if (foundVc) break; } if (foundVc) break; }
+    if (!foundVc) { document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">No Village Council found with that name.</p>'; return; }
     targetVcId = foundVc._id;
   }
-  
   const selectedDate = document.getElementById('g_date').value;
-  let url = `/api/images?vcId=${targetVcId}`;
-  if (selectedDate) url += `&date=${selectedDate}`;
-  
-  const res = await fetch(url); 
-  const entries = await res.json(); 
-  let html = '';
+  let url = `/api/images?vcId=${targetVcId}`; if (selectedDate) url += `&date=${selectedDate}`;
+  const res = await fetch(url); const entries = await res.json(); let html = '';
   if (entries.length === 0) html = '<p style="color:#8a9b91;text-align:center">No images found for this selection.</p>';
-  
   entries.forEach(e => {
     html += `<div style="border:1px solid #eaf3ee;border-radius:8px;margin-bottom:15px;padding:15px;display:flex;justify-content:space-between;align-items:center"><div><strong>${e.date}</strong> (${e.pairs.length} Pairs)</div>`;
     if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:5px 10px;font-size:12px" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
     html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">`;
     e.pairs.forEach(p => {
-      const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
-      const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
+      const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/'); const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
       html += `<div style="position:relative"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:4px" alt="After"></div>`;
     });
     html += `</div>`;
   });
   document.getElementById('adminGallery').innerHTML = html;
 }
-
-async function deleteDate(entryId) {
-  if(!confirm('Delete ALL pairs for this date?')) return;
-  await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-  loadGallery(); loadAnalytics(); loadNonCompliant();
-}
+async function deleteDate(entryId) { if(!confirm('Delete ALL pairs for this date?')) return; await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadGallery(); loadAnalytics(); loadNonCompliant(); }
 
 async function uploadImages() {
   const targetVcId = userRole === 'admin' ? vcSelect.value : vcId;
   if(!targetVcId) return alert('Please select VC first.');
   const selectedDate = document.getElementById('date').value;
   if(!selectedDate) return alert('Please select date.');
-
   msg.innerText = 'Compressing & Uploading...';
-  const offlineData = { vcId: targetVcId, date: selectedDate };
-  let anyFilesSelected = false;
-
+  const offlineData = { vcId: targetVcId, date: selectedDate }; let anyFilesSelected = false;
   for(let i=1; i<=4; i++) {
-    const bFile = document.getElementById(`p${i}b`).files[0]; 
-    const aFile = document.getElementById(`p${i}a`).files[0];
+    const bFile = document.getElementById(`p${i}b`).files[0]; const aFile = document.getElementById(`p${i}a`).files[0];
     if(bFile && aFile) {
       anyFilesSelected = true;
-      const compressedB = await imageCompression(bFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
-      const compressedA = await imageCompression(aFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
-      
-      if (!navigator.onLine) {
-        offlineData[`pair${i}_before`] = compressedB;
-        offlineData[`pair${i}_after`] = compressedA;
-      } else {
-        const formData = new FormData();
-        formData.append('vcId', targetVcId); formData.append('date', selectedDate);
-        formData.append(`pair${i}_before`, compressedB); 
-        formData.append(`pair${i}_after`, compressedA);
+      const compressedB = await imageCompression(bFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 }); const compressedA = await imageCompression(aFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
+      if (!navigator.onLine) { offlineData[`pair${i}_before`] = compressedB; offlineData[`pair${i}_after`] = compressedA; } 
+      else {
+        const formData = new FormData(); formData.append('vcId', targetVcId); formData.append('date', selectedDate); formData.append(`pair${i}_before`, compressedB); formData.append(`pair${i}_after`, compressedA);
         const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
-        const data = await res.json(); 
-        msg.innerText = '✅ ' + data.msg;
+        const data = await res.json(); msg.innerText = '✅ ' + data.msg;
       }
     }
   }
-
   if (!anyFilesSelected) return msg.innerText = '❌ Please select at least one Before & After pair.';
-
-  if (!navigator.onLine) {
-    await saveOfflineUpload(offlineData);
-    msg.innerText = '📱 No internet. Upload saved offline! Will auto-sync when online.';
-  }
-  
-  loadGallery(); 
-  if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); }
+  if (!navigator.onLine) { await saveOfflineUpload(offlineData); msg.innerText = '📱 No internet. Upload saved offline! Will auto-sync when online.'; }
+  loadGallery(); if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); }
 }
 
 async function loadUsers() {
-  const search = document.getElementById('userSearch').value;
-  const dateFilter = document.getElementById('userDateFilter').value;
+  const search = document.getElementById('userSearch').value; const dateFilter = document.getElementById('userDateFilter').value;
   const res = await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}&date=${dateFilter}`, { headers: { 'Authorization': 'Bearer ' + token } });
   const data = await res.json();
-  
-  // Show/hide the Status column based on if a date is selected
   document.getElementById('statusHeader').style.display = dateFilter ? 'table-cell' : 'none';
-  
   userTableBody.innerHTML = data.users.map(u => {
     let statusHtml = '';
-    if (dateFilter) {
-      const pairs = u.uploadedPairs || 0;
-      const color = pairs === 4 ? '#0b6b3a' : (pairs > 0 ? '#d4af37' : '#d32f2f');
-      statusHtml = `<td style="color:${color}; font-weight:600;">${pairs}/4 Pairs</td>`;
-    }
-    
-    return `
-    <tr>
-      <td>${u.username}</td>
-      <td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>
-      ${statusHtml}
-      <td>
-        <button class="btn-gold" style="width:auto;padding:4px 8px;font-size:12px" onclick="resetPass('${u._id}')">Reset Pass</button>
-        <button class="btn-red" style="width:auto;padding:4px 8px;font-size:12px" onclick="deleteUser('${u._id}')">Delete</button>
-      </td>
-    </tr>`;
+    if (dateFilter) { const pairs = u.uploadedPairs || 0; const color = pairs === 4 ? '#0b6b3a' : (pairs > 0 ? '#d4af37' : '#d32f2f'); statusHtml = `<td style="color:${color}; font-weight:600;">${pairs}/4 Pairs</td>`; }
+    return `<tr><td>${u.username}</td><td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>${statusHtml}<td><button class="btn-gold" style="width:auto;padding:4px 8px;font-size:12px" onclick="resetPass('${u._id}')">Reset Pass</button><button class="btn-red" style="width:auto;padding:4px 8px;font-size:12px" onclick="deleteUser('${u._id}')">Delete</button></td></tr>`;
   }).join('');
-    
   document.getElementById('paginationInfo').innerText = `Page ${data.currentPage} of ${data.totalPages} (${data.totalUsers} Total Users)`;
   document.getElementById('prevPageBtn').style.display = data.currentPage > 1 ? 'block' : 'none';
   document.getElementById('nextPageBtn').style.display = data.currentPage < data.totalPages ? 'block' : 'none';
 }
-
-async function createUser() {
-  const u = document.getElementById('newUsername').value; const p = document.getElementById('newPassword').value;
-  const vcId = document.getElementById('newVcSelect').value; const vcName = document.getElementById('newVcSelect').selectedOptions[0]?.dataset.name;
-  const district = document.getElementById('newDistSelect').value; const tehsil = document.getElementById('newTehsilSelect').value;
-  if(!u) return alert('Please enter username'); if(!vcId) return alert('Please select District, Tehsil, and VC');
-  const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ username: u, password: p || '12345', vcId, district, tehsil, vcName }) });
-  if(res.ok) { document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; alert('User created!'); loadUsers(); } else { const err = await res.json(); alert(err.msg); }
-}
-
-async function generateAccounts() {
-  if(!confirm('This will create accounts for all 3,634 VCs. Continue?')) return;
-  userMsg.innerText = 'Generating... This may take 30 seconds.';
-  const res = await fetch('/api/users/generate', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-  const data = await res.json(); userMsg.innerText = '✅ ' + data.msg; loadUsers();
-}
+async function createUser() { const u = document.getElementById('newUsername').value; const p = document.getElementById('newPassword').value; const vcId = document.getElementById('newVcSelect').value; const vcName = document.getElementById('newVcSelect').selectedOptions[0]?.dataset.name; const district = document.getElementById('newDistSelect').value; const tehsil = document.getElementById('newTehsilSelect').value; if(!u) return alert('Please enter username'); if(!vcId) return alert('Please select District, Tehsil, and VC'); const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ username: u, password: p || '12345', vcId, district, tehsil, vcName }) }); if(res.ok) { document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; alert('User created!'); loadUsers(); } else { const err = await res.json(); alert(err.msg); } }
+async function generateAccounts() { if(!confirm('This will create accounts for all 3,634 VCs. Continue?')) return; userMsg.innerText = 'Generating... This may take 30 seconds.'; const res = await fetch('/api/users/generate', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); const data = await res.json(); userMsg.innerText = '✅ ' + data.msg; loadUsers(); }
 async function downloadCSV() { window.location.href = '/api/users/csv?token=' + token; }
 async function resetPass(id) { await fetch(`/api/users/reset/${id}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); alert('Password reset to 12345'); }
 async function deleteUser(id) { if(!confirm('Delete this user?')) return; await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadUsers(); }
 
-async function downloadPDF() {
-  const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value;
-  if(!d || !t) return alert('Please select District and Tehsil first.');
-  document.getElementById('archiveMsg').innerText = 'Generating Tehsil PDF... This may take 30-60 seconds depending on data size.';
-  try {
-    const res = await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
-    }
-    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `${d}_${t}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ Tehsil PDF downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
-}
-
-async function downloadDistrictPDF() {
-  const d = document.getElementById('pdfDistOnlySelect').value;
-  if(!d) return alert('Please select a District first.');
-  document.getElementById('archiveMsg').innerText = 'Generating District PDF... This may take 30-60 seconds depending on data size.';
-  try {
-    const res = await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
-    }
-    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `${d}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ District PDF downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
-}
-
-async function downloadOverallPDF() {
-  document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial PDF... This may take 60+ seconds.';
-  try {
-    const res = await fetch(`/api/download/pdf/overall`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
-    }
-    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `Overall_Provincial_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ Overall PDF downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; }
-}
-
-async function downloadZip() {
-  const d = document.getElementById('zipDistSelect').value;
-  if(!d) return alert('Please select District first.');
-  document.getElementById('archiveMsg').innerText = 'Generating ZIP Archive... This may take 1-2 minutes.';
-  try {
-    const res = await fetch(`/api/download/zip/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) throw new Error('Failed');
-    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `${d}_6Day_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ ZIP Archive downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate ZIP.'; }
-}
-
-async function downloadOverallZip() {
-  document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial ZIP... This may take several minutes depending on data size.';
-  try {
-    const res = await fetch(`/api/download/zip/overall`, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) throw new Error('Failed');
-    const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `Overall_Provincial_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-    document.getElementById('archiveMsg').innerText = '✅ Overall ZIP Archive downloaded successfully!';
-  } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate Overall ZIP.'; }
-}
+async function downloadPDF() { const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value; if(!d || !t) return alert('Please select District and Tehsil first.'); document.getElementById('archiveMsg').innerText = 'Generating Tehsil PDF... This may take 30-60 seconds depending on data size.'; try { const res = await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_${t}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Tehsil PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
+async function downloadDistrictPDF() { const d = document.getElementById('pdfDistOnlySelect').value; if(!d) return alert('Please select a District first.'); document.getElementById('archiveMsg').innerText = 'Generating District PDF... This may take 30-60 seconds depending on data size.'; try { const res = await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ District PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
+async function downloadOverallPDF() { document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial PDF... This may take 60+ seconds.'; try { const res = await fetch(`/api/download/pdf/overall`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Overall_Provincial_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Overall PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
+async function downloadZip() { const d = document.getElementById('zipDistSelect').value; if(!d) return alert('Please select District first.'); document.getElementById('archiveMsg').innerText = 'Generating ZIP Archive... This may take 1-2 minutes.'; try { const res = await fetch(`/api/download/zip/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) throw new Error('Failed'); const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_6Day_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ ZIP Archive downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate ZIP.'; } }
+async function downloadOverallZip() { document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial ZIP... This may take several minutes depending on data size.'; try { const res = await fetch(`/api/download/zip/overall`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) throw new Error('Failed'); const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Overall_Provincial_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Overall ZIP Archive downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate Overall ZIP.'; } }
 
 init();
 </script>
