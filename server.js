@@ -665,15 +665,17 @@ app.get('/api/cloudinary/usage', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
     const result = await cloudinary.api.usage();
-    
-    // Cloudinary returns bytes, we convert to Megabytes (MB) for easier reading
     const MB = 1024 * 1024;
-    // FIXED: Hardcode the 25GB Free Tier limit (25600 MB) so it never shows null
-    const storageUsed = result.storage ? Math.round((result.storage.used || 0) / MB) : 0;
-    const storageLimit = 25600; // 25 GB Free Tier Limit
     
-    const bandwidthUsed = result.bandwidth ? Math.round((result.bandwidth.used || 0) / MB) : 0;
-    const bandwidthLimit = 25600; // 25 GB Free Tier Limit
+    const rawStorage = result.storage || {};
+    const rawBandwidth = result.bandwidth || {};
+    
+    // BULLETPROOF CHECK: Grabs the used amount regardless of what Cloudinary names the property
+    const storageUsed = Math.round((rawStorage.used || rawStorage.usage || rawStorage.used_bytes || 0) / MB);
+    const storageLimit = 25600; // 25 GB Hardcoded Limit
+    
+    const bandwidthUsed = Math.round((rawBandwidth.used || rawBandwidth.usage || rawBandwidth.used_bytes || 0) / MB);
+    const bandwidthLimit = 25600; // 25 GB Hardcoded Limit
     
     res.json({
       storage: { used: storageUsed, limit: storageLimit },
