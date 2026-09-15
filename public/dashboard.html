@@ -366,10 +366,65 @@ async function loadAnalytics() {
   document.getElementById('statUploaded6Days').innerText = data.uploaded6DaysCount;
   if(chartInstance) chartInstance.destroy();
   const ctx = document.getElementById('districtChart').getContext('2d');
+  
+  // Custom Plugin to draw percentage labels on top of the bars
+  const dataLabelPlugin = {
+    id: 'dataLabelPlugin',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = 'bold 12px Inter';
+      ctx.fillStyle = '#074822';
+      ctx.textAlign = 'center';
+      chart.data.datasets[0].data.forEach((value, index) => {
+        const meta = chart.getDatasetMeta(0);
+        const bar = meta.data[index];
+        // Only draw if the bar exists
+        if (bar) {
+          ctx.fillText(value + '%', bar.x, bar.y - 8);
+        }
+      });
+      ctx.restore();
+    }
+  };
+
   chartInstance = new Chart(ctx, {
     type: 'bar',
-    data: { labels: data.districts.map(d => d.name), datasets: [{ label: 'Compliance % (6 Days)', data: data.districts.map(d => d.compliance), backgroundColor: '#0b6b3a' }] },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+    data: { 
+      labels: data.districts.map(d => d.name), 
+      datasets: [{ 
+        label: 'Compliance % (6 Days)', 
+        data: data.districts.map(d => d.compliance), 
+        backgroundColor: '#0b6b3a',
+        borderRadius: 4
+      }] 
+    },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ' + context.raw + '%';
+            }
+          }
+        }
+      },
+      scales: { 
+        y: { 
+          beginAtZero: true, 
+          max: 100,
+          ticks: {
+            callback: function(value) {
+              return value + '%'; // Append '%' to Y-axis labels
+            }
+          }
+        } 
+      } 
+    },
+    plugins: [dataLabelPlugin] // Register the custom plugin
   });
 }
 
