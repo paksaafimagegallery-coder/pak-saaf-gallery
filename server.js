@@ -268,7 +268,7 @@ app.post('/api/users/reset/:id', auth, async (req, res) => {
 });
 
 app.delete('/api/users/:id', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
+  if (req.user.role !== 'admin') return res.status(403)json({ msg: 'Admin only' });
   try { await User.findByIdAndDelete(req.params.id); res.json({ msg: 'User deleted' }); } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
@@ -541,7 +541,7 @@ app.get('/api/download/pdf/overall', auth, async (req, res) => {
   } catch (err) { res.status(500).send('PDF Generation Failed'); }
 });
 
-// ZIP Archive Route
+// 4. District-wise ZIP Archive
 app.get('/api/download/zip/district/:district', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -563,6 +563,36 @@ app.get('/api/download/zip/district/:district', auth, async (req, res) => {
         zip.append(Buffer.from(bRes.data, 'binary'), { name: `${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_before.jpg` });
         const aRes = await axios.get(pair.after.url, { responseType: 'arraybuffer' });
         zip.append(Buffer.from(aRes.data, 'binary'), { name: `${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_after.jpg` });
+      }
+    }
+    await zip.finalize();
+  } catch (err) { res.status(500).send('Failed'); }
+});
+
+// 5. Overall Provincial ZIP Archive (NEW)
+app.get('/api/download/zip/overall', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
+  try {
+    const villages = await Village.find();
+    const entries = await DateEntry.find();
+    if (entries.length === 0) return res.status(404).send('No images found.');
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename=Overall_Provincial_Archive.zip`);
+    const zip = archiver('zip', { zlib: { level: 9 } });
+    zip.pipe(res);
+    
+    const villageMap = {};
+    villages.forEach(v => villageMap[v._id] = v);
+    
+    for (const entry of entries) {
+      const village = villageMap[entry.vcId];
+      if (!village) continue;
+      for (const pair of entry.pairs) {
+        const bRes = await axios.get(pair.before.url, { responseType: 'arraybuffer' });
+        zip.append(Buffer.from(bRes.data, 'binary'), { name: `${village.District}/${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_before.jpg` });
+        const aRes = await axios.get(pair.after.url, { responseType: 'arraybuffer' });
+        zip.append(Buffer.from(aRes.data, 'binary'), { name: `${village.District}/${village.Tehsil}/${village['Village Councils']}/${entry.date}/pair${pair.slot}_after.jpg` });
       }
     }
     await zip.finalize();
