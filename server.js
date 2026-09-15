@@ -285,7 +285,6 @@ app.post('/api/users/reset/:id', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
-// TYPO FIXED HERE: Added the missing dot (.) before json
 app.delete('/api/users/:id', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try { await User.findByIdAndDelete(req.params.id); res.json({ msg: 'User deleted' }); } catch(e) { res.status(500).json({ msg: 'Failed' }); }
@@ -305,25 +304,41 @@ app.get('/api/users/csv', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
-// --- ANALYTICS ROUTE (PKT Fixed) ---
+// --- ANALYTICS ROUTE (Supports Admin & Officer) ---
 app.get('/api/stats/compliance', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
-    const totalVcs = await Village.countDocuments();
+    let totalVcs, uploadedTodayCount, uploaded6DaysCount, districts;
     const today = getPakistanDateString();
-    const uploadedTodayCount = (await DateEntry.find({ date: today }).distinct('vcId')).length;
-    
     const recentDates = getRecentPakistanDates(6);
-    const uploaded6DaysCount = (await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId')).length;
+
+    if (req.user.role === 'admin') {
+      // ADMIN VIEW: Global Stats
+      totalVcs = await Village.countDocuments();
+      uploadedTodayCount = (await DateEntry.find({ date: today }).distinct('vcId')).length;
+      uploaded6DaysCount = (await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId')).length;
+      
+      const allVillages = await Village.find();
+      const districtMap = {};
+      allVillages.forEach(v => { if (!districtMap[v.District]) districtMap[v.District] = { total: 0, uploaded: 0 }; districtMap[v.District].total++; });
+      const recentVcIds = await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId');
+      const recentVillages = await Village.find({ _id: { $in: recentVcIds } });
+      recentVillages.forEach(v => { if (districtMap[v.District]) districtMap[v.District].uploaded++; });
+      
+      districts = Object.keys(districtMap).map(d => ({ name: d, compliance: districtMap[d].total > 0 ? Math.round((districtMap[d].uploaded / districtMap[d].total) * 100) : 0 }));
+    } else {
+      // OFFICER VIEW: Individual VC Stats
+      totalVcs = 1;
+      const vcId = req.user.vcId;
+      const village = await Village.findById(vcId);
+      const vcName = village ? village['Village Councils'] : 'My Village Council';
+      
+      uploadedTodayCount = await DateEntry.countDocuments({ vcId, date: today }) > 0 ? 1 : 0;
+      uploaded6DaysCount = await DateEntry.countDocuments({ vcId, date: { $in: recentDates } }) > 0 ? 1 : 0;
+      
+      const compliance = uploaded6DaysCount * 100; // 100 if uploaded, 0 if not
+      districts = [{ name: vcName, compliance: compliance }];
+    }
     
-    const allVillages = await Village.find();
-    const districtMap = {};
-    allVillages.forEach(v => { if (!districtMap[v.District]) districtMap[v.District] = { total: 0, uploaded: 0 }; districtMap[v.District].total++; });
-    const recentVcIds = await DateEntry.find({ date: { $in: recentDates } }).distinct('vcId');
-    const recentVillages = await Village.find({ _id: { $in: recentVcIds } });
-    recentVillages.forEach(v => { if (districtMap[v.District]) districtMap[v.District].uploaded++; });
-    
-    const districts = Object.keys(districtMap).map(d => ({ name: d, compliance: districtMap[d].total > 0 ? Math.round((districtMap[d].uploaded / districtMap[d].total) * 100) : 0 }));
     res.json({ totalVcs, uploadedTodayCount, uploaded6DaysCount, districts });
   } catch(e) { res.status(500).json({ msg: 'Stats failed' }); }
 });
