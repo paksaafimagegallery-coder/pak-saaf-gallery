@@ -287,7 +287,7 @@ async function loadAnalytics() {
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: { 
-      labels: data.chartLabels, // Use the 6 dates as labels
+      labels: data.chartLabels, 
       datasets: [{ 
         label: 'Daily Compliance %', 
         data: data.chartData, 
@@ -296,14 +296,21 @@ async function loadAnalytics() {
       }] 
     },
     options: { 
-      responsive: true, maintainAspectRatio: false, 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      layout: {
+        padding: {
+          top: 20 // Adds breathing room so the numbers on top of bars don't get cut off
+        }
+      },
       plugins: {
-        legend: { display: true, position: 'top' },
-        tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.raw + '%'; } } }
+        legend: { display: false }, // Hides the "Daily Compliance %" text and the green box
+        tooltip: { callbacks: { label: function(context) { return context.raw + '% Compliance'; } } }
       },
       scales: { 
         y: { 
-          beginAtZero: true, max: 100,
+          beginAtZero: true, 
+          max: 100,
           ticks: { callback: function(value) { return value + '%'; } }
         } 
       } 
