@@ -267,8 +267,9 @@ app.post('/api/users/reset/:id', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
+// TYPO FIXED HERE: Added the missing dot (.) before json
 app.delete('/api/users/:id', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403)json({ msg: 'Admin only' });
+  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try { await User.findByIdAndDelete(req.params.id); res.json({ msg: 'User deleted' }); } catch(e) { res.status(500).json({ msg: 'Failed' }); }
 });
 
