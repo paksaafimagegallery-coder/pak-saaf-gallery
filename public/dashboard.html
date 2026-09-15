@@ -71,6 +71,7 @@ footer strong{color:#d4af37}
     
     <div class="card">
       <h2 style="margin-top:0">Manage Images</h2>
+      <p id="officerVcName" style="display:none; color:#8a9b91; font-size:14px; margin-bottom:15px;">Your Village Council: <strong></strong></p>
       
       <div id="galleryFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px; align-items:center;">
         <input type="text" id="g_vc_search" list="vclist" placeholder="Type VC name (e.g. Akhroota)..." style="flex:2; min-width:200px; margin-bottom:0; padding:11px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
@@ -257,7 +258,6 @@ if (userRole === 'admin') {
   document.getElementById('userMgmtCard').style.display = 'block';
   document.getElementById('archiveCard').style.display = 'block';
   document.getElementById('nonCompliantCard').style.display = 'block';
-  document.getElementById('galleryFilters').style.display = 'flex';
 } else {
   document.getElementById('distName').innerText = `${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;
 }
@@ -309,6 +309,7 @@ async function init() {
     if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = [];
     hierarchy[v.District][v.Tehsil].push(v);
   });
+  
   if (userRole === 'admin') {
     let dHtml = '<option value="">Select District</option>';
     Object.keys(hierarchy).forEach(d => dHtml += `<option>${d}</option>`);
@@ -337,10 +338,18 @@ async function init() {
     // Populate User Management Date Filter
     document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
 
+    document.getElementById('galleryFilters').style.display = 'flex'; // Show filters for Admin
     loadAnalytics();
     loadNonCompliant();
+  } else {
+    // Show Date Filter and VC Name for Officers
+    document.getElementById('galleryFilters').style.display = 'flex'; 
+    document.getElementById('g_vc_search').style.display = 'none'; // Hide the VC search bar for officers
+    document.getElementById('officerVcName').style.display = 'block';
+    document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
   }
-  loadGallery();
+  
+  loadGallery(); // Initial load (will show selected date or default to today)
   if(userRole === 'admin') loadUsers();
 }
 
