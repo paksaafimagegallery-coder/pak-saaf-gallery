@@ -102,20 +102,22 @@ function getRecentPakistanDates(count) {
   return dates;
 }
 
-// --- AUTO-DELETE LOGIC (6 Days Rolling Window per VC) ---
+// --- AUTO-DELETE LOGIC (Strict 6 Calendar Days) ---
 async function cleanupOldDates() {
   try {
-    const vcIds = await DateEntry.distinct('vcId');
-    for (const vcId of vcIds) {
-      const entries = await DateEntry.find({ vcId }).sort({ date: -1 });
-      const entriesToDelete = entries.slice(6); // Keep 6 days
-      for (const entry of entriesToDelete) {
-        for (const pair of entry.pairs) {
-          await cloudinary.uploader.destroy(pair.before.cloudinaryId);
-          await cloudinary.uploader.destroy(pair.after.cloudinaryId);
-        }
-        await DateEntry.findByIdAndDelete(entry._id);
+    // Get the strict 6 valid working dates (e.g., Sep 16, 15, 14, 12, 11, 10)
+    const recentValidDates = getRecentPakistanDates(6);
+    
+    // Find ALL entries in the database where the date is NOT in the valid list
+    const oldEntries = await DateEntry.find({ date: { $nin: recentValidDates } });
+    
+    for (const entry of oldEntries) {
+      for (const pair of entry.pairs) {
+        await cloudinary.uploader.destroy(pair.before.cloudinaryId);
+        await cloudinary.uploader.destroy(pair.after.cloudinaryId);
       }
+      await DateEntry.findByIdAndDelete(entry._id);
+      console.log(`🧹 Deleted old entry for date: ${entry.date}`);
     }
   } catch (err) { console.error('Cleanup error:', err); }
 }
@@ -162,6 +164,7 @@ app.get('/api/images', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
+  await cleanupOldDates(); // NEW: Clean up old images before logging in
   const user = await User.findOne({ username: req.body.username });
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) return res.status(401).json({ msg: 'Invalid credentials' });
   const token = jwt.sign({ id: user._id, role: user.role, vcId: user.vcId, mustChangePassword: user.mustChangePassword }, process.env.JWT_SECRET, { expiresIn: '8h' });
@@ -418,6 +421,7 @@ app.post('/api/upload', auth, (req, res, next) => {
   });
 }, async (req, res) => {
   try {
+    await cleanupOldDates(); // NEW: Clean up old images before uploading new ones
     const vcId = req.user.role === 'admin' ? req.body.vcId : req.user.vcId;
     const { date } = req.body;
     
