@@ -58,6 +58,12 @@ footer strong{color:#d4af37}
   <div style="flex:2;min-width:300px">
     <div class="card">
       <h2 style="margin-top:0">📊 Live Compliance Analytics</h2>
+      
+      <div id="analyticsFilters" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:20px; align-items:center;">
+        <input type="text" id="a_vc_search" list="vclist" placeholder="Search VC to filter analytics (leave empty for Global)..." style="flex:2; min-width:200px; margin-bottom:0; padding:11px; border:1.5px solid #dde7e0; border-radius:8px; box-sizing:border-box">
+        <button class="btn" style="width:auto; padding:11px 20px; margin-bottom:0;" onclick="loadAnalytics()">🔍 Filter Analytics</button>
+      </div>
+
       <div class="analytics-row" id="analyticsRow">
         <div class="stat-box"><h3 id="statTotalVcs">0</h3><p>Total VCs</p></div>
         <div class="stat-box"><h3 id="statUploadedToday">0</h3><p>Uploaded Today</p></div>
@@ -251,6 +257,7 @@ async function init() {
     document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
     document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
     document.getElementById('galleryFilters').style.display = 'flex';
+    document.getElementById('analyticsFilters').style.display = 'flex'; // Show analytics filter for admin
     loadNonCompliant();
   } else {
     document.getElementById('galleryFilters').style.display = 'flex'; 
@@ -264,7 +271,36 @@ async function init() {
 }
 
 async function loadAnalytics() {
-  const res = await fetch('/api/stats/compliance', { headers: { 'Authorization': 'Bearer ' + token } });
+  let url = '/api/stats/compliance';
+  
+  // If Admin is searching for a specific VC in the Analytics filter
+  if (userRole === 'admin') {
+    const searchName = document.getElementById('a_vc_search').value.toLowerCase();
+    if (searchName) {
+      let foundVc = null;
+      for (const d in hierarchy) {
+        for (const t in hierarchy[d]) {
+          foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName));
+          if (foundVc) break;
+        }
+        if (foundVc) break;
+      }
+      
+      if (foundVc) {
+        url += '?vcId=' + foundVc._id;
+      } else {
+        // If VC not found, show 0s and empty chart
+        document.getElementById('statTotalVcs').innerText = '0';
+        document.getElementById('statUploadedToday').innerText = '0';
+        document.getElementById('statUploaded6Days').innerText = '0';
+        if(chartInstance) chartInstance.destroy();
+        alert('No Village Council found with that name.');
+        return;
+      }
+    }
+  }
+  
+  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
   const data = await res.json();
   document.getElementById('statTotalVcs').innerText = data.totalVcs;
   document.getElementById('statUploadedToday').innerText = data.uploadedTodayCount;
