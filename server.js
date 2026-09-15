@@ -660,5 +660,28 @@ app.get('/api/download/zip/overall', auth, async (req, res) => {
   } catch (err) { res.status(500).send('Failed'); }
 });
 
+// --- CLOUDINARY USAGE API (Admin Only) ---
+app.get('/api/cloudinary/usage', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
+  try {
+    const result = await cloudinary.api.usage();
+    
+    // Cloudinary returns bytes, we convert to Megabytes (MB) for easier reading
+    const MB = 1024 * 1024;
+    const storageUsed = result.storage ? Math.round(result.storage.used_bytes / MB) : 0;
+    const storageLimit = result.storage ? Math.round(result.storage.limit_in_bytes / MB) : 25600; // Default 25GB
+    const bandwidthUsed = result.bandwidth ? Math.round(result.bandwidth.used_bytes / MB) : 0;
+    const bandwidthLimit = result.bandwidth ? Math.round(result.bandwidth.limit_in_bytes / MB) : 25600; // Default 25GB
+    
+    res.json({
+      storage: { used: storageUsed, limit: storageLimit },
+      bandwidth: { used: bandwidthUsed, limit: bandwidthLimit }
+    });
+  } catch (error) {
+    console.error('Cloudinary Usage Error:', error);
+    res.status(500).json({ msg: 'Failed to fetch Cloudinary usage' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
