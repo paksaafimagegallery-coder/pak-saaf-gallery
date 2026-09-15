@@ -339,7 +339,6 @@ async function init() {
     document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
 
     document.getElementById('galleryFilters').style.display = 'flex'; // Show filters for Admin
-    loadAnalytics();
     loadNonCompliant();
   } else {
     // Show Date Filter and VC Name for Officers
@@ -348,6 +347,9 @@ async function init() {
     document.getElementById('officerVcName').style.display = 'block';
     document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
   }
+  
+  // Load analytics for BOTH Admin and Officer
+  loadAnalytics();
   
   // Prevent auto-loading to save bandwidth.
   // Just show a placeholder message until the user clicks "Load Images".
