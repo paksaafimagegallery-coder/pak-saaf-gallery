@@ -668,11 +668,12 @@ app.get('/api/cloudinary/usage', auth, async (req, res) => {
     
     // Cloudinary returns bytes, we convert to Megabytes (MB) for easier reading
     const MB = 1024 * 1024;
-    // FIXED: Cloudinary uses 'usage' and 'limit' properties
-    const storageUsed = result.storage ? Math.round(result.storage.usage / MB) : 0;
-    const storageLimit = result.storage ? Math.round(result.storage.limit / MB) : 25600; // Default 25GB
-    const bandwidthUsed = result.bandwidth ? Math.round(result.bandwidth.usage / MB) : 0;
-    const bandwidthLimit = result.bandwidth ? Math.round(result.bandwidth.limit / MB) : 25600; // Default 25GB
+    // FIXED: Hardcode the 25GB Free Tier limit (25600 MB) so it never shows null
+    const storageUsed = result.storage ? Math.round((result.storage.used || 0) / MB) : 0;
+    const storageLimit = 25600; // 25 GB Free Tier Limit
+    
+    const bandwidthUsed = result.bandwidth ? Math.round((result.bandwidth.used || 0) / MB) : 0;
+    const bandwidthLimit = 25600; // 25 GB Free Tier Limit
     
     res.json({
       storage: { used: storageUsed, limit: storageLimit },
