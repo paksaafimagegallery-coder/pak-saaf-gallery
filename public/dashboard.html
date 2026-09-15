@@ -154,8 +154,23 @@ footer strong{color:#d4af37}
     <button class="btn" style="width:auto;padding:10px 20px;margin-bottom:15px" onclick="createUser()">Add User</button>
     <p id="userMsg" style="font-size:14px;margin-bottom:15px"></p>
     
-    <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:15px">
-    <table><thead><tr><th>Username</th><th>District / Tehsil / VC</th><th>Action</th></tr></thead><tbody id="userTableBody"></tbody></table>
+    <div style="display:flex; gap:15px; margin-bottom:15px; align-items:center; flex-wrap:wrap;">
+      <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:0; flex:2; min-width:200px;">
+      <select id="userDateFilter" onchange="currentUserPage=1; loadUsers()" style="margin-bottom:0; flex:1; min-width:150px;">
+        <option value="">All Dates (Accounts)</option>
+      </select>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>District / Tehsil / VC</th>
+          <th id="statusHeader" style="display:none;">Status (Pairs)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px">
       <button id="prevPageBtn" class="btn" style="width:auto;padding:8px 16px" onclick="currentUserPage--; loadUsers()">← Previous</button>
       <span id="paginationInfo" style="font-size:14px;color:#8a9b91"></span>
@@ -319,6 +334,9 @@ async function init() {
     ncDateHtml += recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
     document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
 
+    // Populate User Management Date Filter
+    document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
+
     loadAnalytics();
     loadNonCompliant();
   }
@@ -480,15 +498,32 @@ async function uploadImages() {
 
 async function loadUsers() {
   const search = document.getElementById('userSearch').value;
-  const res = await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}`, { headers: { 'Authorization': 'Bearer ' + token } });
+  const dateFilter = document.getElementById('userDateFilter').value;
+  const res = await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}&date=${dateFilter}`, { headers: { 'Authorization': 'Bearer ' + token } });
   const data = await res.json();
   
-  userTableBody.innerHTML = data.users.map(u => `
-    <tr><td>${u.username}</td><td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>
-    <td>
-      <button class="btn-gold" style="width:auto;padding:4px 8px;font-size:12px" onclick="resetPass('${u._id}')">Reset Pass</button>
-      <button class="btn-red" style="width:auto;padding:4px 8px;font-size:12px" onclick="deleteUser('${u._id}')">Delete</button>
-    </td></tr>`).join('');
+  // Show/hide the Status column based on if a date is selected
+  document.getElementById('statusHeader').style.display = dateFilter ? 'table-cell' : 'none';
+  
+  userTableBody.innerHTML = data.users.map(u => {
+    let statusHtml = '';
+    if (dateFilter) {
+      const pairs = u.uploadedPairs || 0;
+      const color = pairs === 4 ? '#0b6b3a' : (pairs > 0 ? '#d4af37' : '#d32f2f');
+      statusHtml = `<td style="color:${color}; font-weight:600;">${pairs}/4 Pairs</td>`;
+    }
+    
+    return `
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>
+      ${statusHtml}
+      <td>
+        <button class="btn-gold" style="width:auto;padding:4px 8px;font-size:12px" onclick="resetPass('${u._id}')">Reset Pass</button>
+        <button class="btn-red" style="width:auto;padding:4px 8px;font-size:12px" onclick="deleteUser('${u._id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
     
   document.getElementById('paginationInfo').innerText = `Page ${data.currentPage} of ${data.totalPages} (${data.totalUsers} Total Users)`;
   document.getElementById('prevPageBtn').style.display = data.currentPage > 1 ? 'block' : 'none';
