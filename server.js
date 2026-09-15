@@ -438,6 +438,40 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 });
 
 // --- PDF & ZIP ARCHIVE ROUTES ---
+
+// Helper function to generate PDF pages
+async function generatePdf(doc, entries, villages) {
+  const pageWidth = doc.page.width - 100;
+  const imgWidth = (pageWidth - 20) / 2;
+  const imgHeight = imgWidth * 0.75;
+  const villageMap = {};
+  villages.forEach(v => villageMap[v._id] = v);
+
+  for (const entry of entries) {
+    const village = villageMap[entry.vcId];
+    if (!village) continue;
+    for (const pair of entry.pairs) {
+      if (doc.y > doc.page.height - 250) doc.addPage();
+      let currentY = doc.y;
+      doc.fontSize(12).fillColor('#074822').text(`${village.District} > ${village.Tehsil} > ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`, 50, currentY);
+      currentY += 20;
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
+      try {
+        const bRes = await axios.get(bUrl, { responseType: 'arraybuffer' });
+        doc.image(Buffer.from(bRes.data, 'binary'), 50, currentY, { width: imgWidth, height: imgHeight });
+        const aRes = await axios.get(aUrl, { responseType: 'arraybuffer' });
+        doc.image(Buffer.from(aRes.data, 'binary'), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
+        currentY += imgHeight + 5;
+        doc.fontSize(10).fillColor('black').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
+        doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
+        doc.y = currentY + 20;
+      } catch(e) { console.log("PDF Img Error"); }
+    }
+  }
+}
+
+// 1. Tehsil-wise PDF
 app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
@@ -446,43 +480,68 @@ app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => 
     const vcIds = villages.map(v => v._id);
     const entries = await DateEntry.find({ vcId: { $in: vcIds } }).sort({ date: 1, vcId: 1 });
     if (entries.length === 0) return res.status(404).send('No images found.');
+    if (entries.length > 50) return res.status(400).send('Too many images for one PDF (Server limit). Please use ZIP Archive.');
+    
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${district}_${tehsil}_6Day_Report.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=${district}_${tehsil}_Report.pdf`);
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
     doc.fontSize(20).fillColor('#074822').text(`${district} - ${tehsil}`, { align: 'center' });
     doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`6-Day Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
+    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
     doc.moveDown(2);
-    const pageWidth = doc.page.width - 100;
-    const imgWidth = (pageWidth - 20) / 2;
-    const imgHeight = imgWidth * 0.75;
-    for (const entry of entries) {
-      const village = villages.find(v => v._id.equals(entry.vcId));
-      if (!village) continue;
-      for (const pair of entry.pairs) {
-        if (doc.y > doc.page.height - 250) doc.addPage();
-        let currentY = doc.y;
-        doc.fontSize(14).fillColor('#074822').text(`VC: ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`, 50, currentY);
-        currentY += 25;
-        const bUrl = pair.before.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
-        const aUrl = pair.after.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
-        try {
-          const bRes = await axios.get(bUrl, { responseType: 'arraybuffer' });
-          doc.image(Buffer.from(bRes.data, 'binary'), 50, currentY, { width: imgWidth, height: imgHeight });
-          const aRes = await axios.get(aUrl, { responseType: 'arraybuffer' });
-          doc.image(Buffer.from(aRes.data, 'binary'), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
-          currentY += imgHeight + 5;
-          doc.fontSize(10).fillColor('black').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
-          doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
-          doc.y = currentY + 20;
-        } catch(e) { console.log("PDF Img Error"); }
-      }
-    }
+    await generatePdf(doc, entries, villages);
     doc.end();
   } catch (err) { res.status(500).send('PDF Generation Failed'); }
 });
 
+// 2. District-wise PDF
+app.get('/api/download/pdf/district/:district', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
+  try {
+    const { district } = req.params;
+    const villages = await Village.find({ District: district });
+    const vcIds = villages.map(v => v._id);
+    const entries = await DateEntry.find({ vcId: { $in: vcIds } }).sort({ date: 1, vcId: 1 });
+    if (entries.length === 0) return res.status(404).send('No images found.');
+    if (entries.length > 50) return res.status(400).send('Too many images for one PDF (Server limit). Please use ZIP Archive.');
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${district}_Report.pdf`);
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+    doc.fontSize(20).fillColor('#074822').text(`${district} District Report`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
+    doc.moveDown(2);
+    await generatePdf(doc, entries, villages);
+    doc.end();
+  } catch (err) { res.status(500).send('PDF Generation Failed'); }
+});
+
+// 3. Overall PDF (All Districts)
+app.get('/api/download/pdf/overall', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
+  try {
+    const villages = await Village.find();
+    const entries = await DateEntry.find().sort({ date: 1, vcId: 1 });
+    if (entries.length === 0) return res.status(404).send('No images found.');
+    if (entries.length > 50) return res.status(400).send('Too many images for one PDF (Server limit). Please use ZIP Archive.');
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Overall_Provincial_Report.pdf`);
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+    doc.fontSize(20).fillColor('#074822').text(`Overall Provincial Report`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
+    doc.moveDown(2);
+    await generatePdf(doc, entries, villages);
+    doc.end();
+  } catch (err) { res.status(500).send('PDF Generation Failed'); }
+});
+
+// ZIP Archive Route
 app.get('/api/download/zip/district/:district', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
   try {
