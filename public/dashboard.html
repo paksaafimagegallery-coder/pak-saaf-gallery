@@ -85,6 +85,23 @@ footer strong{color:#d4af37}
     </div>
   </div>
 
+  <!-- Cloudinary Storage Status Panel -->
+  <div class="card" id="cloudinaryCard" style="display:none">
+    <h2 style="margin-top:0">☁️ Cloud Storage Status</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:30px; align-items:center; justify-content:center;">
+      <div style="flex:1; min-width:250px; max-width:300px;">
+        <h3 style="text-align:center; margin-bottom:10px;">Storage Usage</h3>
+        <div style="height:200px;"><canvas id="storageChart"></canvas></div>
+        <p id="storageText" style="text-align:center; margin-top:10px; font-weight:600; color:#074822;"></p>
+      </div>
+      <div style="flex:1; min-width:250px; max-width:300px;">
+        <h3 style="text-align:center; margin-bottom:10px;">Monthly Bandwidth</h3>
+        <div style="height:200px;"><canvas id="bandwidthChart"></canvas></div>
+        <p id="bandwidthText" style="text-align:center; margin-top:10px; font-weight:600; color:#074822;"></p>
+      </div>
+    </div>
+  </div>
+
   <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:15px;">
       <h2 style="margin:0; color:#d32f2f" id="nonCompliantTitle">🚨 Zero Compliance Alert</h2>
@@ -182,6 +199,8 @@ footer strong{color:#d4af37}
 let hierarchy = {}, userRole = localStorage.getItem('role'), token = localStorage.getItem('token'), vcId = localStorage.getItem('vcId'), chartInstance = null;
 let currentUserPage = 1;
 let nonCompliantData = [];
+let storageChartInstance = null;
+let bandwidthChartInstance = null;
 
 let db;
 const request = indexedDB.open('pakSaafDB', 1);
@@ -225,6 +244,7 @@ if (userRole === 'admin') {
   document.getElementById('userMgmtCard').style.display = 'block';
   document.getElementById('archiveCard').style.display = 'block';
   document.getElementById('nonCompliantCard').style.display = 'block';
+  document.getElementById('cloudinaryCard').style.display = 'block'; // Show Cloudinary card for Admin
 } else {
   document.getElementById('distName').innerText = `${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;
 }
@@ -257,7 +277,7 @@ async function init() {
     document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
     document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
     document.getElementById('galleryFilters').style.display = 'flex';
-    document.getElementById('analyticsFilters').style.display = 'flex'; // Show analytics filter for admin
+    document.getElementById('analyticsFilters').style.display = 'flex';
     loadNonCompliant();
   } else {
     document.getElementById('galleryFilters').style.display = 'flex'; 
@@ -266,14 +286,13 @@ async function init() {
     document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
   }
   loadAnalytics();
+  loadCloudinaryUsage(); // Load Cloudinary stats
   document.getElementById('adminGallery').innerHTML = '<p style="color:#8a9b91;text-align:center">Please select a date and click Load Images to view data.</p>';
   if(userRole === 'admin') loadUsers();
 }
 
 async function loadAnalytics() {
   let url = '/api/stats/compliance';
-  
-  // If Admin is searching for a specific VC in the Analytics filter
   if (userRole === 'admin') {
     const searchName = document.getElementById('a_vc_search').value.toLowerCase();
     if (searchName) {
@@ -285,11 +304,8 @@ async function loadAnalytics() {
         }
         if (foundVc) break;
       }
-      
-      if (foundVc) {
-        url += '?vcId=' + foundVc._id;
-      } else {
-        // If VC not found, show 0s and empty chart
+      if (foundVc) { url += '?vcId=' + foundVc._id; } 
+      else {
         document.getElementById('statTotalVcs').innerText = '0';
         document.getElementById('statUploadedToday').innerText = '0';
         document.getElementById('statUploaded6Days').innerText = '0';
@@ -322,36 +338,41 @@ async function loadAnalytics() {
 
   chartInstance = new Chart(ctx, {
     type: 'bar',
-    data: { 
-      labels: data.chartLabels, 
-      datasets: [{ 
-        label: 'Daily Compliance %', 
-        data: data.chartData, 
-        backgroundColor: '#0b6b3a',
-        borderRadius: 4
-      }] 
-    },
+    data: { labels: data.chartLabels, datasets: [{ label: 'Daily Compliance %', data: data.chartData, backgroundColor: '#0b6b3a', borderRadius: 4 }] },
     options: { 
-      responsive: true, 
-      maintainAspectRatio: false, 
-      layout: {
-        padding: {
-          top: 20 // Adds breathing room so the numbers on top of bars don't get cut off
-        }
-      },
-      plugins: {
-        legend: { display: false }, // Hides the "Daily Compliance %" text and the green box
-        tooltip: { callbacks: { label: function(context) { return context.raw + '% Compliance'; } } }
-      },
-      scales: { 
-        y: { 
-          beginAtZero: true, 
-          max: 100,
-          ticks: { callback: function(value) { return value + '%'; } }
-        } 
-      } 
+      responsive: true, maintainAspectRatio: false, 
+      layout: { padding: { top: 20 } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.raw + '% Compliance'; } } } },
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(value) { return value + '%'; } } } } 
     },
     plugins: [dataLabelPlugin]
+  });
+}
+
+async function loadCloudinaryUsage() {
+  const res = await fetch('/api/cloudinary/usage', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!res.ok) return; // Silently fail if it errors
+  const data = await res.json();
+  
+  if (storageChartInstance) storageChartInstance.destroy();
+  if (bandwidthChartInstance) bandwidthChartInstance.destroy();
+
+  const sCtx = document.getElementById('storageChart').getContext('2d');
+  const storageRemaining = data.storage.limit - data.storage.used;
+  document.getElementById('storageText').innerText = `${data.storage.used} MB / ${data.storage.limit} MB`;
+  storageChartInstance = new Chart(sCtx, {
+    type: 'doughnut',
+    data: { labels: ['Used', 'Remaining'], datasets: [{ data: [data.storage.used, storageRemaining > 0 ? storageRemaining : 0], backgroundColor: ['#d32f2f', '#0b6b3a'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+  });
+
+  const bCtx = document.getElementById('bandwidthChart').getContext('2d');
+  const bandwidthRemaining = data.bandwidth.limit - data.bandwidth.used;
+  document.getElementById('bandwidthText').innerText = `${data.bandwidth.used} MB / ${data.bandwidth.limit} MB`;
+  bandwidthChartInstance = new Chart(bCtx, {
+    type: 'doughnut',
+    data: { labels: ['Used', 'Remaining'], datasets: [{ data: [data.bandwidth.used, bandwidthRemaining > 0 ? bandwidthRemaining : 0], backgroundColor: ['#d4af37', '#0b6b3a'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
   });
 }
 
@@ -399,7 +420,7 @@ async function loadGallery() {
   });
   document.getElementById('adminGallery').innerHTML = html;
 }
-async function deleteDate(entryId) { if(!confirm('Delete ALL pairs for this date?')) return; await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadGallery(); loadAnalytics(); loadNonCompliant(); }
+async function deleteDate(entryId) { if(!confirm('Delete ALL pairs for this date?')) return; await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadGallery(); loadAnalytics(); loadNonCompliant(); loadCloudinaryUsage(); }
 
 async function uploadImages() {
   const targetVcId = userRole === 'admin' ? vcSelect.value : vcId;
@@ -423,7 +444,7 @@ async function uploadImages() {
   }
   if (!anyFilesSelected) return msg.innerText = '❌ Please select at least one Before & After pair.';
   if (!navigator.onLine) { await saveOfflineUpload(offlineData); msg.innerText = '📱 No internet. Upload saved offline! Will auto-sync when online.'; }
-  loadGallery(); if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); }
+  loadGallery(); if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); loadCloudinaryUsage(); }
 }
 
 async function loadUsers() {
