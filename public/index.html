@@ -51,7 +51,6 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 
-/* TOPBAR */
 .topbar{
   position:sticky;top:0;z-index:100;
   background:rgba(4,19,13,0.75);
@@ -108,7 +107,6 @@ body{
 }
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(244,183,64,0.5)}
 
-/* HERO */
 .hero{
   max-width:1400px;margin:0 auto;
   padding:60px 24px 30px;
@@ -175,7 +173,6 @@ body{
   margin-top:6px;font-weight:600;
 }
 
-/* FILTERS BAR */
 .filters-wrap{
   max-width:1400px;margin:30px auto 24px;
   padding:0 24px;
@@ -203,7 +200,6 @@ body{
 }
 .search-box input::placeholder{color:var(--text-mute)}
 
-/* MAIN GRID */
 .section-head{
   max-width:1400px;margin:36px auto 18px;
   padding:0 24px;
@@ -224,8 +220,17 @@ body{
 .grid-wrap{max-width:1400px;margin:0 auto;padding:0 24px 40px}
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  grid-template-columns:repeat(4,1fr);
   gap:18px;
+}
+@media (max-width:1200px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:900px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){
+  .grid{grid-template-columns:1fr}
 }
 .card{
   background:var(--glass);
@@ -253,7 +258,6 @@ body{
 }
 .card-sub .dot{width:4px;height:4px;border-radius:50%;background:var(--text-mute)}
 
-/* 2x2 Thumbnail Grid (preserved from original) */
 .card-thumb{
   aspect-ratio:16/10;
   background:linear-gradient(135deg,var(--bg-soft),#0a2a1e);
@@ -275,7 +279,6 @@ body{
   font-size:36px;font-weight:800;opacity:0.6;
 }
 
-/* Badge for VC count */
 .card-badge{
   position:absolute;top:10px;left:10px;
   background:rgba(4,19,13,0.85);
@@ -286,7 +289,6 @@ body{
   letter-spacing:0.5px;
 }
 
-/* MODAL */
 .modal-overlay{
   position:fixed;inset:0;z-index:200;
   background:rgba(4,19,13,0.85);
@@ -376,7 +378,6 @@ body{
   box-shadow:0 0 0 3px rgba(25,195,125,0.10);
 }
 
-/* Before/After tiles */
 .ba-section-title{
   font-family:'Plus Jakarta Sans';font-weight:700;
   font-size:14px;color:var(--text-soft);
@@ -417,7 +418,6 @@ body{
 .ba-tile-label.before{background:rgba(255,90,110,0.85);color:#fff}
 .ba-tile-label.after{background:rgba(25,195,125,0.85);color:#04130d}
 
-/* LIGHTBOX */
 .lightbox{
   position:fixed;inset:0;z-index:300;
   background:rgba(4,19,13,0.97);
@@ -467,7 +467,6 @@ body{
   transform:scale(1.1);
 }
 
-/* EMPTY STATE */
 .empty{
   text-align:center;padding:60px 20px;color:var(--text-mute);
 }
@@ -475,7 +474,6 @@ body{
 .empty-title{font-size:16px;font-weight:600;color:var(--text-soft);margin-bottom:6px}
 .empty-sub{font-size:13px}
 
-/* FOOTER */
 footer{
   max-width:1400px;margin:40px auto 0;
   padding:30px 24px;
@@ -496,7 +494,6 @@ footer{
 }
 .footer-dev b{color:var(--green-glow);font-weight:700}
 
-/* SCROLLBAR */
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:var(--bg-deep)}
 ::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:5px}
@@ -604,17 +601,6 @@ footer{
 </footer>
 
 <script>
-/* =====================================================
-   EXACT SAME LOGIC AS YOUR ORIGINAL — UNCHANGED
-   - /api/hierarchy fetch
-   - /api/district-thumbnails fetch
-   - /api/images fetch
-   - District → Tehsil → VC → Date → Before/After pairs navigation
-   - PKT (UTC+5) date calculation
-   - Lightbox with keyboard nav
-   - Service Worker registration
-   ===================================================== */
-
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -637,7 +623,6 @@ async function init() {
       hierarchy[v.District][v.Tehsil].push(v);
     });
 
-    // Fetch the latest thumbnails for all districts
     const thumbRes = await fetch('/api/district-thumbnails');
     districtThumbnails = await thumbRes.json();
 
@@ -645,12 +630,7 @@ async function init() {
     updateSectionMeta();
   } catch (err) {
     console.error('Init failed:', err);
-    document.getElementById('grid').innerHTML = `
-      <div class="empty" style="grid-column:1/-1">
-        <div class="empty-icon">⚠️</div>
-        <div class="empty-title">Failed to load data</div>
-        <div class="empty-sub">Please refresh the page or try again later</div>
-      </div>`;
+    document.getElementById('grid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load data</div><div class="empty-sub">Please refresh the page or try again later</div></div>';
   }
 
   if ('serviceWorker' in navigator) {
@@ -660,7 +640,7 @@ async function init() {
 
 function updateSectionMeta() {
   const count = Object.keys(hierarchy).length;
-  document.getElementById('sectionMeta').innerHTML = `Showing <b style="color:var(--green-glow)">${count} districts</b> · Click any district to view tehsils`;
+  document.getElementById('sectionMeta').innerHTML = 'Showing <b style="color:var(--green-glow)">' + count + ' districts</b> · Click any district to view tehsils';
 }
 
 function renderDistricts() {
@@ -668,99 +648,60 @@ function renderDistricts() {
   const districts = Object.keys(hierarchy).filter(d => d.toLowerCase().includes(search));
 
   if (districts.length === 0) {
-    document.getElementById('grid').innerHTML = `
-      <div class="empty" style="grid-column:1/-1">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">No districts found</div>
-        <div class="empty-sub">Try a different search term</div>
-      </div>`;
+    document.getElementById('grid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No districts found</div><div class="empty-sub">Try a different search term</div></div>';
     return;
   }
 
   document.getElementById('grid').innerHTML = districts.map(d => {
-    // Build thumbnail HTML (2x2 grid) — SAME AS ORIGINAL
-    let thumbHtml = `<div class="card-thumb-empty">${escapeHtml(d.substring(0,2).toUpperCase())}</div>`;
+    let thumbHtml = '<div class="card-thumb-empty">' + escapeHtml(d.substring(0,2).toUpperCase()) + '</div>';
     const thumbs = districtThumbnails[d];
     if (thumbs && thumbs.length > 0) {
-      thumbHtml = thumbs.map(url => `<img src="${url}" alt="${escapeHtml(d)}" loading="lazy">`).join('');
+      thumbHtml = thumbs.map(url => '<img src="' + url + '" alt="' + escapeHtml(d) + '" loading="lazy">').join('');
     }
 
     const tehsilCount = Object.keys(hierarchy[d]).length;
     const vcCount = Object.values(hierarchy[d]).reduce((sum, vcs) => sum + vcs.length, 0);
 
-    return `
-    <div class="card district-card" onclick="openDistrict('${escapeHtml(d)}')">
-      <div class="card-thumb">${thumbHtml}</div>
-      <div class="card-badge">${tehsilCount}T · ${vcCount} VCs</div>
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(d)}</div>
-        <div class="card-sub">
-          <span>View Tehsils</span>
-          <span class="dot"></span>
-          <span>Latest images</span>
-        </div>
-      </div>
-    </div>`;
+    return '<div class="card district-card" onclick="openDistrict(\'' + escapeHtml(d) + '\')"><div class="card-thumb">' + thumbHtml + '</div><div class="card-badge">' + tehsilCount + 'T · ' + vcCount + ' VCs</div><div class="card-body"><div class="card-title">' + escapeHtml(d) + '</div><div class="card-sub"><span>View Tehsils</span><span class="dot"></span><span>Latest images</span></div></div></div>';
   }).join('');
 }
 
 function openDistrict(d) {
   currentDistrict = d;
   document.getElementById('modalTitle').innerText = d;
-  document.getElementById('modalMeta').innerText = `${Object.keys(hierarchy[d]).length} Tehsils · Click any to view Village Councils`;
-  document.getElementById('modalBody').innerHTML = `<div class="grid">` + Object.keys(hierarchy[d]).map(t => {
+  document.getElementById('modalMeta').innerText = Object.keys(hierarchy[d]).length + ' Tehsils · Click any to view Village Councils';
+  document.getElementById('modalBody').innerHTML = '<div class="grid">' + Object.keys(hierarchy[d]).map(t => {
     const vcCount = hierarchy[d][t].length;
-    return `
-    <div class="card" onclick="openTehsil('${escapeHtml(t)}')">
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(t)}</div>
-        <div class="card-sub"><span>${vcCount} Village Councils</span></div>
-      </div>
-    </div>`;
-  }).join('') + `</div>`;
+    return '<div class="card" onclick="openTehsil(\'' + escapeHtml(t) + '\')"><div class="card-body"><div class="card-title">' + escapeHtml(t) + '</div><div class="card-sub"><span>' + vcCount + ' Village Councils</span></div></div></div>';
+  }).join('') + '</div>';
   document.getElementById('modalOverlay').classList.add('active');
 }
 
 function openTehsil(t) {
   currentTehsil = t;
-  document.getElementById('modalTitle').innerText = `${currentDistrict} → ${t}`;
-  document.getElementById('modalMeta').innerText = `${hierarchy[currentDistrict][t].length} Village Councils`;
-  document.getElementById('modalBody').innerHTML = `
-    <button class="btn-back" onclick="openDistrict('${escapeHtml(currentDistrict)}')">← Back to Tehsils</button>
-    <input type="text" class="modal-input" id="vcSearch" placeholder="Search Village Council..." onkeyup="filterVCs()">
-    <div class="grid" id="vcGrid">` + hierarchy[currentDistrict][t].map(v => `
-      <div class="card" onclick="openVC('${v._id}','${escapeHtml(v['Village Councils'])}')">
-        <div class="card-body">
-          <div class="card-title">${escapeHtml(v['Village Councils'])}</div>
-          <div class="card-sub"><span>View Dates</span></div>
-        </div>
-      </div>`).join('') + `</div>`;
+  document.getElementById('modalTitle').innerText = currentDistrict + ' → ' + t;
+  document.getElementById('modalMeta').innerText = hierarchy[currentDistrict][t].length + ' Village Councils';
+  document.getElementById('modalBody').innerHTML = '<button class="btn-back" onclick="openDistrict(\'' + escapeHtml(currentDistrict) + '\')">← Back to Tehsils</button><input type="text" class="modal-input" id="vcSearch" placeholder="Search Village Council..." onkeyup="filterVCs()"><div class="grid" id="vcGrid">' + hierarchy[currentDistrict][t].map(v => '<div class="card" onclick="openVC(\'' + v._id + '\',\'' + escapeHtml(v['Village Councils']) + '\')"><div class="card-body"><div class="card-title">' + escapeHtml(v['Village Councils']) + '</div><div class="card-sub"><span>View Dates</span></div></div></div>').join('') + '</div>';
 }
 
 function filterVCs() {
   const search = document.getElementById('vcSearch').value.toLowerCase();
   const filtered = hierarchy[currentDistrict][currentTehsil].filter(v => v['Village Councils'].toLowerCase().includes(search));
-  document.getElementById('vcGrid').innerHTML = filtered.map(v => `
-    <div class="card" onclick="openVC('${v._id}','${escapeHtml(v['Village Councils'])}')">
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(v['Village Councils'])}</div>
-        <div class="card-sub"><span>View Dates</span></div>
-      </div>
-    </div>`).join('');
+  document.getElementById('vcGrid').innerHTML = filtered.map(v => '<div class="card" onclick="openVC(\'' + v._id + '\',\'' + escapeHtml(v['Village Councils']) + '\')"><div class="card-body"><div class="card-title">' + escapeHtml(v['Village Councils']) + '</div><div class="card-sub"><span>View Dates</span></div></div></div>').join('');
 }
 
 function openVC(vcId, vcName) {
   currentVcId = vcId;
-  document.getElementById('modalTitle').innerText = `${currentTehsil} → ${vcName}`;
+  document.getElementById('modalTitle').innerText = currentTehsil + ' → ' + vcName;
   document.getElementById('modalMeta').innerText = 'Select a date to view images';
 
-  // Calculate Pakistan Time (PKT) strictly — SAME AS ORIGINAL
-  function getPakistanDateString(date = new Date()) {
+  function getPakistanDateString(date) {
+    date = date || new Date();
     const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000));
     const year = pkTime.getUTCFullYear();
     const month = String(pkTime.getUTCMonth() + 1).padStart(2, '0');
     const day = String(pkTime.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return year + '-' + month + '-' + day;
   }
 
   const dates = [];
@@ -769,43 +710,28 @@ function openVC(vcId, vcName) {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000));
-    if (pkDate.getUTCDay() !== 0) { // 0 is Sunday
+    if (pkDate.getUTCDay() !== 0) {
       dates.push(getPakistanDateString(d));
     }
     daysAgo++;
   }
 
-  document.getElementById('modalBody').innerHTML = `
-    <button class="btn-back" onclick="openTehsil('${escapeHtml(currentTehsil)}')">← Back to Village Councils</button>
-    <div class="grid">` + dates.map(d => {
-      const dateObj = new Date(d + 'T00:00:00');
-      const isToday = d === getPakistanDateString();
-      const formatted = dateObj.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      return `
-      <div class="card" onclick="openDate('${d}')">
-        <div class="card-body">
-          <div class="card-title">${formatted}</div>
-          <div class="card-sub">
-            ${isToday ? '<span style="color:var(--green-glow);font-weight:700">● Today</span><span class="dot"></span>' : ''}
-            <span>View Images</span>
-          </div>
-        </div>
-      </div>`;
-    }).join('') + `</div>`;
+  document.getElementById('modalBody').innerHTML = '<button class="btn-back" onclick="openTehsil(\'' + escapeHtml(currentTehsil) + '\')">← Back to Village Councils</button><div class="grid">' + dates.map(d => {
+    const dateObj = new Date(d + 'T00:00:00');
+    const isToday = d === getPakistanDateString();
+    const formatted = dateObj.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    return '<div class="card" onclick="openDate(\'' + d + '\')"><div class="card-body"><div class="card-title">' + formatted + '</div><div class="card-sub">' + (isToday ? '<span style="color:var(--green-glow);font-weight:700">● Today</span><span class="dot"></span>' : '') + '<span>View Images</span></div></div></div>';
+  }).join('') + '</div>';
 }
 
 async function openDate(date) {
   document.getElementById('modalMeta').innerText = 'Loading...';
-  document.getElementById('modalBody').innerHTML = `
-    <div class="empty">
-      <div class="empty-icon">⏳</div>
-      <div class="empty-title">Loading images…</div>
-    </div>`;
+  document.getElementById('modalBody').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-title">Loading images…</div></div>';
 
-  const res = await fetch(`/api/images?vcId=${currentVcId}&date=${date}`);
+  const res = await fetch('/api/images?vcId=' + currentVcId + '&date=' + date);
   const entry = await res.json();
   const pairs = entry && entry.length > 0 ? entry[0].pairs : [];
-  document.getElementById('modalMeta').innerText = `${pairs.length} pair(s) uploaded`;
+  document.getElementById('modalMeta').innerText = pairs.length + ' pair(s) uploaded';
 
   lightboxImages = [];
   let beforeHtml = '', afterHtml = '';
@@ -818,33 +744,16 @@ async function openDate(date) {
       const aIdx = lightboxImages.length;
       lightboxImages.push(pair.after.url);
 
-      beforeHtml += `<div class="ba-tile" onclick="openLightbox(${bIdx})">
-        <span class="ba-tile-label before">Pair ${i} · B</span>
-        <img src="${pair.before.url}" alt="Before">
-      </div>`;
-      afterHtml += `<div class="ba-tile" onclick="openLightbox(${aIdx})">
-        <span class="ba-tile-label after">Pair ${i} · A</span>
-        <img src="${pair.after.url}" alt="After">
-      </div>`;
+      beforeHtml += '<div class="ba-tile" onclick="openLightbox(' + bIdx + ')"><span class="ba-tile-label before">Pair ' + i + ' · B</span><img src="' + pair.before.url + '" alt="Before"></div>';
+      afterHtml += '<div class="ba-tile" onclick="openLightbox(' + aIdx + ')"><span class="ba-tile-label after">Pair ' + i + ' · A</span><img src="' + pair.after.url + '" alt="After"></div>';
     } else {
-      beforeHtml += `<div class="ba-tile">
-        <span class="ba-tile-label before">Pair ${i}</span>
-        <div class="ba-tile-empty">Not Uploaded</div>
-      </div>`;
-      afterHtml += `<div class="ba-tile">
-        <span class="ba-tile-label after">Pair ${i}</span>
-        <div class="ba-tile-empty">Not Uploaded</div>
-      </div>`;
+      beforeHtml += '<div class="ba-tile"><span class="ba-tile-label before">Pair ' + i + '</span><div class="ba-tile-empty">Not Uploaded</div></div>';
+      afterHtml += '<div class="ba-tile"><span class="ba-tile-label after">Pair ' + i + '</span><div class="ba-tile-empty">Not Uploaded</div></div>';
     }
   }
 
   const vcTitlePart = document.getElementById('modalTitle').innerText.split('→ ')[1] || '';
-  document.getElementById('modalBody').innerHTML = `
-    <button class="btn-back" onclick="openVC('${currentVcId}', '${escapeHtml(vcTitlePart)}')">← Back to Dates</button>
-    <div class="ba-section-title before">Before Images</div>
-    <div class="ba-grid">${beforeHtml}</div>
-    <div class="ba-section-title after">After Images</div>
-    <div class="ba-grid">${afterHtml}</div>`;
+  document.getElementById('modalBody').innerHTML = '<button class="btn-back" onclick="openVC(\'' + currentVcId + '\', \'' + escapeHtml(vcTitlePart) + '\')">← Back to Dates</button><div class="ba-section-title before">Before Images</div><div class="ba-grid">' + beforeHtml + '</div><div class="ba-section-title after">After Images</div><div class="ba-grid">' + afterHtml + '</div>';
 }
 
 function openLightbox(idx) {
