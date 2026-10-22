@@ -508,17 +508,17 @@ async function generatePdf(doc, entries, villages) {
   const pageWidth = doc.page.width - (marginX * 2);   // 532pt available
   const pageHeight = doc.page.height;                  // 1008pt for Legal
   
-  // Image dimensions — 2 images side by side
+  // Image dimensions — SHRUNK slightly so 3 pairs fit
   const imgGap = 15;
   const imgWidth = (pageWidth - imgGap) / 2;            // ~258pt each
-  const imgHeight = 250;                                 // Tall, clear images
+  const imgHeight = 230;                                 // Was 250, now 230 (still crisp)
   
-  // Spacing per pair block
-  const headerHeight = 22;
-  const labelHeight = 18;
-  const pairSpacing = 12;
+  // TIGHTER spacing per pair block
+  const headerHeight = 20;
+  const labelHeight = 16;
+  const pairSpacing = 8;
   const pairBlockHeight = headerHeight + imgHeight + labelHeight + pairSpacing;
-  // ~302pt per pair × 3 = 906pt (fits in 928pt available height)
+  // = 20 + 230 + 16 + 8 = 274pt per pair × 3 = 822pt (fits in 928pt with 106pt spare)
   
   const villageMap = {};
   villages.forEach(v => villageMap[v._id] = v);
@@ -544,9 +544,9 @@ async function generatePdf(doc, entries, villages) {
       );
       currentY += headerHeight;
       
-      // BEST RESOLUTION image URLs (w_700 = crisp on print, q_auto = smart compression)
-      const bUrl = pair.before.url.replace('/upload/', '/upload/w_700,h_680,c_fill,g_auto,q_auto:best/');
-      const aUrl = pair.after.url.replace('/upload/', '/upload/w_700,h_680,c_fill,g_auto,q_auto:best/');
+      // BEST RESOLUTION image URLs (w_700 = crisp on print, q_auto:best = highest quality)
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_700,h_620,c_fill,g_auto,q_auto:best/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_700,h_620,c_fill,g_auto,q_auto:best/');
       
       // BEFORE image (left side) — with graceful fallback
       try {
@@ -590,7 +590,7 @@ async function generatePdf(doc, entries, villages) {
         );
       }
       
-      currentY += imgHeight + 4;
+      currentY += imgHeight + 3;
       
       // Bold colored labels under images
       doc.fontSize(10).fillColor('#cc3046').font('Helvetica-Bold').text('BEFORE', marginX, currentY, { width: imgWidth, align: 'center' });
