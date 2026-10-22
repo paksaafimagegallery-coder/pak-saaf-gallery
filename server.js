@@ -500,76 +500,100 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 
 // --- PDF & ZIP ARCHIVE ROUTES ---
 
-// Helper function to generate PDF pages
-// Helper function to generate PDF pages (with better error handling + image fallbacks)
+// Helper function to generate PDF pages (FIXED — proper page layout, no missing pages)
 async function generatePdf(doc, entries, villages) {
-  const pageWidth = doc.page.width - 100;
-  const imgWidth = (pageWidth - 20) / 2;
-  const imgHeight = imgWidth * 0.75;
+  const pageWidth = doc.page.width - 100;  // 50px margin on each side
+  const pageHeight = doc.page.height;
+  const imgWidth = (pageWidth - 20) / 2;   // 2 images side by side, 20px gap
+  const imgHeight = imgWidth * 0.65;       // Slightly shorter aspect ratio
+  const headerHeight = 25;
+  const labelHeight = 18;
+  const pairBlockHeight = imgHeight + headerHeight + labelHeight + 25;  // Total height needed per pair
+  
   const villageMap = {};
   villages.forEach(v => villageMap[v._id] = v);
 
   for (const entry of entries) {
     const village = villageMap[entry.vcId];
     if (!village) continue;
+    
     for (const pair of entry.pairs) {
-      if (doc.y > doc.page.height - 250) doc.addPage();
+      // CHECK: Does this pair fit on current page? If not, add new page FIRST
+      const neededSpace = doc.y + pairBlockHeight;
+      const availableSpace = pageHeight - 50;  // 50px bottom margin
+      if (neededSpace > availableSpace) {
+        doc.addPage();
+      }
+      
       let currentY = doc.y;
       
-      // Header
+      // Draw header (District > Tehsil > VC | Date | Pair N)
       doc.fontSize(11).fillColor('#074822').text(
         `${village.District} > ${village.Tehsil} > ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`,
-        50, currentY
+        50, currentY, { width: pageWidth }
       );
-      currentY += 20;
+      currentY += headerHeight;
       
-      // Use smaller images (w_400 instead of w_500) for faster download
-      const bUrl = pair.before.url.replace('/upload/', '/upload/w_400,h_300,c_fill/');
-      const aUrl = pair.after.url.replace('/upload/', '/upload/w_400,h_300,c_fill/');
+      // Use smaller, optimized images
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_350,h_225,c_fill/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_350,h_225,c_fill/');
       
-      // Try to load BEFORE image (with 8-second timeout)
+      // Load BEFORE image
       let beforeLoaded = false;
       try {
         const bRes = await axios.get(bUrl, { 
           responseType: 'arraybuffer',
-          timeout: 8000,
-          maxContentLength: 2 * 1024 * 1024  // 2MB max
+          timeout: 10000,
+          maxContentLength: 1.5 * 1024 * 1024
         });
         doc.image(Buffer.from(bRes.data), 50, currentY, { width: imgWidth, height: imgHeight });
         beforeLoaded = true;
       } catch(e) { 
         console.log(`❌ Before image failed (Pair ${pair.slot}):`, e.message);
         // Draw placeholder box
-        doc.rect(50, currentY, imgWidth, imgHeight).stroke('#cccccc');
-        doc.fontSize(10).fillColor('#999999').text('Image unavailable', 50, currentY + imgHeight/2, { width: imgWidth, align: 'center' });
+        doc.save();
+        doc.rect(50, currentY, imgWidth, imgHeight).lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.restore();
+        doc.fontSize(11).fillColor('#999999').text(
+          '⚠️ Image unavailable', 
+          50, currentY + imgHeight/2 - 6, 
+          { width: imgWidth, align: 'center' }
+        );
       }
       
-      // Try to load AFTER image (with 8-second timeout)
+      // Load AFTER image (right side)
       let afterLoaded = false;
       try {
         const aRes = await axios.get(aUrl, { 
           responseType: 'arraybuffer',
-          timeout: 8000,
-          maxContentLength: 2 * 1024 * 1024
+          timeout: 10000,
+          maxContentLength: 1.5 * 1024 * 1024
         });
         doc.image(Buffer.from(aRes.data), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
         afterLoaded = true;
       } catch(e) { 
         console.log(`❌ After image failed (Pair ${pair.slot}):`, e.message);
-        // Draw placeholder box
-        doc.rect(50 + imgWidth + 20, currentY, imgWidth, imgHeight).stroke('#cccccc');
-        doc.fontSize(10).fillColor('#999999').text('Image unavailable', 50 + imgWidth + 20, currentY + imgHeight/2, { width: imgWidth, align: 'center' });
+        doc.save();
+        doc.rect(50 + imgWidth + 20, currentY, imgWidth, imgHeight).lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.restore();
+        doc.fontSize(11).fillColor('#999999').text(
+          '⚠️ Image unavailable', 
+          50 + imgWidth + 20, currentY + imgHeight/2 - 6, 
+          { width: imgWidth, align: 'center' }
+        );
       }
       
       currentY += imgHeight + 5;
-      // Labels under images
-      doc.fontSize(9).fillColor('#666666').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
+      
+      // Draw labels under images
+      doc.fontSize(10).fillColor('#666666').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
       doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
-      doc.y = currentY + 20;
+      
+      // Move doc.y to position for next pair (with proper spacing)
+      doc.y = currentY + labelHeight + 20;
     }
   }
 }
-
 // 1. Tehsil-wise PDF
 app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
