@@ -501,6 +501,7 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 // --- PDF & ZIP ARCHIVE ROUTES ---
 
 // Helper function to generate PDF pages
+// Helper function to generate PDF pages (with better error handling + image fallbacks)
 async function generatePdf(doc, entries, villages) {
   const pageWidth = doc.page.width - 100;
   const imgWidth = (pageWidth - 20) / 2;
@@ -514,20 +515,57 @@ async function generatePdf(doc, entries, villages) {
     for (const pair of entry.pairs) {
       if (doc.y > doc.page.height - 250) doc.addPage();
       let currentY = doc.y;
-      doc.fontSize(12).fillColor('#074822').text(`${village.District} > ${village.Tehsil} > ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`, 50, currentY);
+      
+      // Header
+      doc.fontSize(11).fillColor('#074822').text(
+        `${village.District} > ${village.Tehsil} > ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`,
+        50, currentY
+      );
       currentY += 20;
-      const bUrl = pair.before.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
-      const aUrl = pair.after.url.replace('/upload/', '/upload/w_500,h_375,c_fill/');
+      
+      // Use smaller images (w_400 instead of w_500) for faster download
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_400,h_300,c_fill/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_400,h_300,c_fill/');
+      
+      // Try to load BEFORE image (with 8-second timeout)
+      let beforeLoaded = false;
       try {
-        const bRes = await axios.get(bUrl, { responseType: 'arraybuffer' });
-        doc.image(Buffer.from(bRes.data, 'binary'), 50, currentY, { width: imgWidth, height: imgHeight });
-        const aRes = await axios.get(aUrl, { responseType: 'arraybuffer' });
-        doc.image(Buffer.from(aRes.data, 'binary'), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
-        currentY += imgHeight + 5;
-        doc.fontSize(10).fillColor('black').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
-        doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
-        doc.y = currentY + 20;
-      } catch(e) { console.log("PDF Img Error"); }
+        const bRes = await axios.get(bUrl, { 
+          responseType: 'arraybuffer',
+          timeout: 8000,
+          maxContentLength: 2 * 1024 * 1024  // 2MB max
+        });
+        doc.image(Buffer.from(bRes.data), 50, currentY, { width: imgWidth, height: imgHeight });
+        beforeLoaded = true;
+      } catch(e) { 
+        console.log(`❌ Before image failed (Pair ${pair.slot}):`, e.message);
+        // Draw placeholder box
+        doc.rect(50, currentY, imgWidth, imgHeight).stroke('#cccccc');
+        doc.fontSize(10).fillColor('#999999').text('Image unavailable', 50, currentY + imgHeight/2, { width: imgWidth, align: 'center' });
+      }
+      
+      // Try to load AFTER image (with 8-second timeout)
+      let afterLoaded = false;
+      try {
+        const aRes = await axios.get(aUrl, { 
+          responseType: 'arraybuffer',
+          timeout: 8000,
+          maxContentLength: 2 * 1024 * 1024
+        });
+        doc.image(Buffer.from(aRes.data), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
+        afterLoaded = true;
+      } catch(e) { 
+        console.log(`❌ After image failed (Pair ${pair.slot}):`, e.message);
+        // Draw placeholder box
+        doc.rect(50 + imgWidth + 20, currentY, imgWidth, imgHeight).stroke('#cccccc');
+        doc.fontSize(10).fillColor('#999999').text('Image unavailable', 50 + imgWidth + 20, currentY + imgHeight/2, { width: imgWidth, align: 'center' });
+      }
+      
+      currentY += imgHeight + 5;
+      // Labels under images
+      doc.fontSize(9).fillColor('#666666').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
+      doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
+      doc.y = currentY + 20;
     }
   }
 }
