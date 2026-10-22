@@ -500,197 +500,248 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 
 // --- PDF & ZIP ARCHIVE ROUTES ---
 
-// Helper function to generate PDF pages (LEGAL — 3 pairs/page, professional borders, crisp images)
+// Helper function to generate PDF pages (LEGAL SIZE — 3 pairs/page, official government style)
 async function generatePdf(doc, entries, villages) {
   const marginX = 35;
   const marginTop = 35;
-  const marginBottom = 50;  // Extra for footer
+  const marginBottom = 55;
   const pageWidth = doc.page.width - (marginX * 2);
   const pageHeight = doc.page.height;
-  
-  // Image dimensions — sized to GUARANTEE 3 pairs fit per page
+
   const imgGap = 12;
-  const imgWidth = (pageWidth - imgGap) / 2;            // ~268pt each
-  const imgHeight = 195;                                 // Crisp enough at w_600
-  
-  // Tight but professional spacing
+  const imgWidth = (pageWidth - imgGap) / 2;
+  const imgHeight = 195;
+
   const headerHeight = 24;
   const labelHeight = 14;
-  const pairSpacing = 10;
-  const pairBlockHeight = headerHeight + imgHeight + 6 + labelHeight + pairSpacing;
-  // = 24 + 195 + 6 + 14 + 10 = 249pt per pair × 3 = 747pt (fits in 923pt with 176pt spare)
-  
+  const pairSpacing = 8;
+  const pairBlockHeight = headerHeight + 6 + imgHeight + 4 + labelHeight + pairSpacing;
+
   const villageMap = {};
   villages.forEach(v => villageMap[v._id] = v);
-  
+
   let pairCount = 0;
   let pageNumber = 1;
-  
-  // Draw outer page border + footer on first page
-  drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber);
-  
+
+  // First page: set starting position after the title section
+  doc.y = 130;
+
+  // Draw page border + footer on first page
+  drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber, villages[0], entries.length);
+
+  // Reset doc.y because drawPageDecorations may have changed it
+  doc.y = 130;
+
   for (const entry of entries) {
     const village = villageMap[entry.vcId];
     if (!village) continue;
-    
+
     for (const pair of entry.pairs) {
       pairCount++;
-      
-      // CHECK: Will this pair fit on current page?
+
       const neededSpace = doc.y + pairBlockHeight;
       const availableSpace = pageHeight - marginBottom;
       if (neededSpace > availableSpace) {
         doc.addPage();
         pageNumber++;
-        drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber);
+        drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber, villages[0], entries.length);
+        doc.y = 50;
       }
-      
+
       let currentY = doc.y;
-      
-      // === HEADER BAR with green background ===
+
+      // === HEADER BAR (green with white text) ===
       doc.save();
-      doc.rect(marginX, currentY, pageWidth, headerHeight)
-         .fillColor('#0d7d4f').fill();
+      doc.rect(marginX, currentY, pageWidth, headerHeight).fillColor('#0d7d4f').fill();
       doc.restore();
-      
-      // Pair number badge (circle on left)
+
+      // Pair number badge (gold circle)
       doc.save();
-      doc.circle(marginX + 14, currentY + headerHeight/2, 9)
-         .fillColor('#ffd76b').fill();
+      doc.circle(marginX + 14, currentY + headerHeight/2, 9).fillColor('#ffd76b').fill();
       doc.restore();
       doc.fontSize(10).fillColor('#04130d').font('Helvetica-Bold').text(
-        String(pairCount), marginX + 9, currentY + headerHeight/2 - 5, 
+        String(pairCount), marginX + 9, currentY + headerHeight/2 - 5,
         { width: 10, align: 'center' }
       );
-      
-      // Header text on green bar
+
+      // Header text
       doc.fontSize(9).fillColor('#ffffff').font('Helvetica-Bold').text(
         `${village.District}  ›  ${village.Tehsil}  ›  ${village['Village Councils']}`,
         marginX + 30, currentY + 4, { width: pageWidth - 200 }
       );
       doc.fontSize(8).fillColor('#a7c4b6').font('Helvetica').text(
-        `${entry.date}  |  Pair ${pair.slot}`,
+        `${entry.date}  |  Pair ${pair.slot} of 4`,
         marginX + 30, currentY + 13, { width: pageWidth - 200 }
       );
-      
-      // Right side: VC label badge
+
+      // Right side badge
       doc.fontSize(8).fillColor('#ffd76b').font('Helvetica-Bold').text(
-        `VC REPORT`, marginX + pageWidth - 80, currentY + 8, 
-        { width: 80, align: 'right' }
+        'OFFICIAL', marginX + pageWidth - 70, currentY + 8,
+        { width: 70, align: 'right' }
       );
-      
+
       currentY += headerHeight + 6;
-      
-      // === IMAGES (crisp w_600 resolution) ===
+
+      // === IMAGES ===
       const bUrl = pair.before.url.replace('/upload/', '/upload/w_600,h_460,c_fill,g_auto,q_auto:best/');
       const aUrl = pair.after.url.replace('/upload/', '/upload/w_600,h_460,c_fill,g_auto,q_auto:best/');
-      
-      // BEFORE image with border frame
+
+      // BEFORE image with border
       try {
-        const bRes = await axios.get(bUrl, { 
+        const bRes = await axios.get(bUrl, {
           responseType: 'arraybuffer',
           timeout: 12000,
           maxContentLength: 2 * 1024 * 1024
         });
-        // Light gray border around image
         doc.save();
         doc.rect(marginX - 1, currentY - 1, imgWidth + 2, imgHeight + 2)
-           .lineWidth(1).strokeColor('#cccccc').stroke();
+           .lineWidth(1).strokeColor('#0d7d4f').stroke();
         doc.restore();
         doc.image(Buffer.from(bRes.data), marginX, currentY, { width: imgWidth, height: imgHeight });
-      } catch(e) { 
-        console.log(`❌ Before image failed (Pair ${pair.slot}):`, e.message);
+      } catch(e) {
+        console.log(`Before image failed (Pair ${pair.slot}):`, e.message);
         doc.save();
         doc.rect(marginX, currentY, imgWidth, imgHeight)
            .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
         doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
-          '⚠️ Image unavailable', marginX, currentY + imgHeight/2 - 6, 
+          'Image unavailable', marginX, currentY + imgHeight/2 - 6,
           { width: imgWidth, align: 'center' }
         );
       }
-      
-      // AFTER image with border frame
+
+      // AFTER image with border
       try {
-        const aRes = await axios.get(aUrl, { 
+        const aRes = await axios.get(aUrl, {
           responseType: 'arraybuffer',
           timeout: 12000,
           maxContentLength: 2 * 1024 * 1024
         });
         doc.save();
         doc.rect(marginX + imgWidth + imgGap - 1, currentY - 1, imgWidth + 2, imgHeight + 2)
-           .lineWidth(1).strokeColor('#cccccc').stroke();
+           .lineWidth(1).strokeColor('#0d7d4f').stroke();
         doc.restore();
         doc.image(Buffer.from(aRes.data), marginX + imgWidth + imgGap, currentY, { width: imgWidth, height: imgHeight });
-      } catch(e) { 
-        console.log(`❌ After image failed (Pair ${pair.slot}):`, e.message);
+      } catch(e) {
+        console.log(`After image failed (Pair ${pair.slot}):`, e.message);
         doc.save();
         doc.rect(marginX + imgWidth + imgGap, currentY, imgWidth, imgHeight)
            .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
         doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
-          '⚠️ Image unavailable', marginX + imgWidth + imgGap, currentY + imgHeight/2 - 6, 
+          'Image unavailable', marginX + imgWidth + imgGap, currentY + imgHeight/2 - 6,
           { width: imgWidth, align: 'center' }
         );
       }
-      
+
       currentY += imgHeight + 4;
-      
-      // === LABELS under images (in colored boxes) ===
-      // BEFORE label (red box)
+
+      // === LABELS (red/green boxes) ===
       doc.save();
-      doc.rect(marginX, currentY, imgWidth, labelHeight)
-         .fillColor('#cc3046').fill();
+      doc.rect(marginX, currentY, imgWidth, labelHeight).fillColor('#cc3046').fill();
       doc.restore();
       doc.fontSize(9).fillColor('#ffffff').font('Helvetica-Bold').text(
-        'BEFORE', marginX, currentY + 3, 
+        'BEFORE', marginX, currentY + 3,
         { width: imgWidth, align: 'center' }
       );
-      
-      // AFTER label (green box)
+
       doc.save();
-      doc.rect(marginX + imgWidth + imgGap, currentY, imgWidth, labelHeight)
-         .fillColor('#0d7d4f').fill();
+      doc.rect(marginX + imgWidth + imgGap, currentY, imgWidth, labelHeight).fillColor('#0d7d4f').fill();
       doc.restore();
       doc.fillColor('#ffffff').text(
-        'AFTER', marginX + imgWidth + imgGap, currentY + 3, 
+        'AFTER', marginX + imgWidth + imgGap, currentY + 3,
         { width: imgWidth, align: 'center' }
       );
-      
-      // Reset for next pair
+
       doc.font('Helvetica').fillColor('#074822');
       doc.y = currentY + labelHeight + pairSpacing;
     }
   }
 }
 
-// Helper: Draw page border + footer with page number
-function drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber) {
-  // Outer page border (2pt green)
+// Helper: Draw official page decorations + title section
+function drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber, village, totalEntries) {
+  // OUTER DOUBLE BORDER
   doc.save();
   doc.rect(15, 15, doc.page.width - 30, pageHeight - 30)
-     .lineWidth(2).strokeColor('#0d7d4f').stroke();
-  doc.restore();
-  
-  // Inner thin border (0.5pt light)
-  doc.save();
+     .lineWidth(2.5).strokeColor('#0d7d4f').stroke();
   doc.rect(20, 20, doc.page.width - 40, pageHeight - 40)
-     .lineWidth(0.5).strokeColor('#a7c4b6').stroke();
+     .lineWidth(0.5).strokeColor('#0d7d4f').stroke();
   doc.restore();
-  
-  // Footer with page number + official text
-  const footerY = pageHeight - 30;
-  doc.fontSize(8).fillColor('#6f8a7e').font('Helvetica').text(
-    'Pak Saaf Image Gallery  ·  Directorate General, LG&RDD, Khyber Pakhtunkhwa',
+
+  if (pageNumber === 1) {
+    // Top accent bar
+    doc.save();
+    doc.rect(35, 35, pageWidth, 6).fillColor('#ffd76b').fill();
+    doc.restore();
+
+    // Title
+    doc.fontSize(14).fillColor('#0d7d4f').font('Helvetica-Bold').text(
+      'PAK SAAF IMAGE GALLERY',
+      35, 50, { width: pageWidth, align: 'center' }
+    );
+    doc.fontSize(9).fillColor('#6f8a7e').font('Helvetica').text(
+      'Directorate General, Local Government & Rural Development Department',
+      35, 65, { width: pageWidth, align: 'center' }
+    );
+    doc.fontSize(9).fillColor('#6f8a7e').text(
+      'Government of Khyber Pakhtunkhwa',
+      35, 76, { width: pageWidth, align: 'center' }
+    );
+
+    // Metadata box
+    let metaY = 92;
+    doc.save();
+    doc.rect(35, metaY, pageWidth, 22).lineWidth(1).strokeColor('#0d7d4f').fillColor('#f4f8f5').fillAndStroke();
+    doc.restore();
+
+    if (village) {
+      doc.fontSize(9).fillColor('#074822').font('Helvetica-Bold').text(
+        `VC: ${village['Village Councils']}`,
+        45, metaY + 4, { width: pageWidth/2 - 50 }
+      );
+      doc.fontSize(8).fillColor('#6f8a7e').font('Helvetica').text(
+        `${village.District} › ${village.Tehsil}`,
+        45, metaY + 14, { width: pageWidth/2 - 50 }
+      );
+    }
+
+    doc.fontSize(8).fillColor('#6f8a7e').font('Helvetica').text(
+      `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`,
+      pageWidth/2, metaY + 4, { width: pageWidth/2 - 40, align: 'right' }
+    );
+    doc.fontSize(8).fillColor('#6f8a7e').text(
+      `Total Pairs: ${totalEntries * 4}  |  Report ID: RPT-${Date.now().toString().slice(-6)}`,
+      pageWidth/2, metaY + 14, { width: pageWidth/2 - 40, align: 'right' }
+    );
+  } else {
+    // Small page header for continuation pages
+    doc.fontSize(8).fillColor('#6f8a7e').font('Helvetica').text(
+      `PAK SAAF IMAGE GALLERY  ·  ${village ? village['Village Councils'] : 'VC Report'}  ·  Continued (Page ${pageNumber})`,
+      35, 30, { width: pageWidth, align: 'center' }
+    );
+  }
+
+  // FOOTER
+  const footerY = pageHeight - 35;
+
+  // Footer separator line
+  doc.save();
+  doc.moveTo(35, footerY - 5).lineTo(doc.page.width - 35, footerY - 5)
+     .lineWidth(0.5).strokeColor('#0d7d4f').stroke();
+  doc.restore();
+
+  doc.fontSize(7).fillColor('#6f8a7e').font('Helvetica').text(
+    'Pak Saaf Image Gallery  ·  Directorate General, LG&RDD, Khyber Pakhtunkhwa  ·  Confidential',
     marginX, footerY, { width: pageWidth - 100, align: 'left' }
   );
-  doc.fontSize(8).fillColor('#0d7d4f').font('Helvetica-Bold').text(
+  doc.fontSize(7).fillColor('#0d7d4f').font('Helvetica-Bold').text(
     `Page ${pageNumber}`,
-    marginX + pageWidth - 60, footerY, 
+    marginX + pageWidth - 60, footerY,
     { width: 60, align: 'right' }
   );
-  
-  // Reset font
+
+  // Reset
   doc.font('Helvetica').fillColor('#074822');
 }
 
@@ -707,12 +758,8 @@ app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => 
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${district}_${tehsil}_Report.pdf`);
-    const doc = new PDFDocument({ size: 'LEGAL', margin: 40 });
+    const doc = new PDFDocument({ size: [612, 1008], margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).fillColor('#074822').text(`${district} - ${tehsil}`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
-    doc.moveDown(2);
     await generatePdf(doc, entries, villages);
     doc.end();
   } catch (err) { res.status(500).send('PDF Generation Failed'); }
@@ -731,12 +778,8 @@ app.get('/api/download/pdf/district/:district', auth, async (req, res) => {
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${district}_Report.pdf`);
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: [612, 1008], margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).fillColor('#074822').text(`${district} District Report`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
-    doc.moveDown(2);
     await generatePdf(doc, entries, villages);
     doc.end();
   } catch (err) { res.status(500).send('PDF Generation Failed'); }
@@ -753,12 +796,8 @@ app.get('/api/download/pdf/overall', auth, async (req, res) => {
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Overall_Provincial_Report.pdf`);
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: [612, 1008], margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).fillColor('#074822').text(`Overall Provincial Report`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`Sanitation Report (Generated: ${new Date().toLocaleDateString()})`, { align: 'center' });
-    doc.moveDown(2);
     await generatePdf(doc, entries, villages);
     doc.end();
   } catch (err) { res.status(500).send('PDF Generation Failed'); }
@@ -842,13 +881,8 @@ app.get('/api/download/pdf/vc/:vcId', auth, async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${village['Village Councils']}_VC_Report.pdf`);
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: [612, 1008], margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).fillColor('#074822').text(`${village['Village Councils']} - VC Report`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`${village.District} > ${village.Tehsil}`, { align: 'center' });
-    doc.fontSize(11).fillColor('#8a9b91').text(`Generated: ${new Date().toLocaleDateString()} | Total Entries: ${entries.length}`, { align: 'center' });
-    doc.moveDown(2);
     await generatePdf(doc, entries, [village]);
     doc.end();
   } catch (err) { console.error('VC PDF Error:', err); res.status(500).send('PDF Generation Failed'); }
@@ -869,13 +903,8 @@ app.get('/api/download/pdf/vc/:vcId/:date', auth, async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${village['Village Councils']}_${requestedDate}_Report.pdf`);
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: [612, 1008], margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).fillColor('#074822').text(`${village['Village Councils']} - Date Report`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#8a9b91').text(`${village.District} > ${village.Tehsil}`, { align: 'center' });
-    doc.fontSize(11).fillColor('#8a9b91').text(`Date: ${requestedDate} | Generated: ${new Date().toLocaleDateString()}`, { align: 'center' });
-    doc.moveDown(2);
     await generatePdf(doc, entries, [village]);
     doc.end();
   } catch (err) { console.error('VC Date PDF Error:', err); res.status(500).send('PDF Generation Failed'); }
@@ -908,7 +937,6 @@ app.get('/api/download/zip/vc/:vcId', auth, async (req, res) => {
     await zip.finalize();
   } catch (err) { console.error('VC ZIP Error:', err); res.status(500).send('Failed'); }
 });
-
 
 // --- CLOUDINARY USAGE API (Admin Only) ---
 app.get('/api/cloudinary/usage', auth, async (req, res) => {
