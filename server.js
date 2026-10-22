@@ -500,15 +500,25 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 
 // --- PDF & ZIP ARCHIVE ROUTES ---
 
-// Helper function to generate PDF pages (FIXED — proper page layout, no missing pages)
+// Helper function to generate PDF pages (LEGAL SIZE — 3 pairs per page, best resolution)
 async function generatePdf(doc, entries, villages) {
-  const pageWidth = doc.page.width - 100;  // 50px margin on each side
-  const pageHeight = doc.page.height;
-  const imgWidth = (pageWidth - 20) / 2;   // 2 images side by side, 20px gap
-  const imgHeight = imgWidth * 0.65;       // Slightly shorter aspect ratio
-  const headerHeight = 25;
+  const marginX = 40;
+  const marginTop = 40;
+  const marginBottom = 40;
+  const pageWidth = doc.page.width - (marginX * 2);   // 532pt available
+  const pageHeight = doc.page.height;                  // 1008pt for Legal
+  
+  // Image dimensions — 2 images side by side
+  const imgGap = 15;
+  const imgWidth = (pageWidth - imgGap) / 2;            // ~258pt each
+  const imgHeight = 250;                                 // Tall, clear images
+  
+  // Spacing per pair block
+  const headerHeight = 22;
   const labelHeight = 18;
-  const pairBlockHeight = imgHeight + headerHeight + labelHeight + 25;  // Total height needed per pair
+  const pairSpacing = 12;
+  const pairBlockHeight = headerHeight + imgHeight + labelHeight + pairSpacing;
+  // ~302pt per pair × 3 = 906pt (fits in 928pt available height)
   
   const villageMap = {};
   villages.forEach(v => villageMap[v._id] = v);
@@ -518,82 +528,83 @@ async function generatePdf(doc, entries, villages) {
     if (!village) continue;
     
     for (const pair of entry.pairs) {
-      // CHECK: Does this pair fit on current page? If not, add new page FIRST
+      // CHECK: Will this pair fit on current page? If not, start new page
       const neededSpace = doc.y + pairBlockHeight;
-      const availableSpace = pageHeight - 50;  // 50px bottom margin
+      const availableSpace = pageHeight - marginBottom;
       if (neededSpace > availableSpace) {
         doc.addPage();
       }
       
       let currentY = doc.y;
       
-      // Draw header (District > Tehsil > VC | Date | Pair N)
-      doc.fontSize(11).fillColor('#074822').text(
-        `${village.District} > ${village.Tehsil} > ${village['Village Councils']} | Date: ${entry.date} | Pair ${pair.slot}`,
-        50, currentY, { width: pageWidth }
+      // Header — district > tehsil > VC + date + pair number
+      doc.fontSize(10).fillColor('#074822').font('Helvetica-Bold').text(
+        `${village.District} > ${village.Tehsil} > ${village['Village Councils']}  |  ${entry.date}  |  Pair ${pair.slot}`,
+        marginX, currentY, { width: pageWidth }
       );
       currentY += headerHeight;
       
-      // Use smaller, optimized images
-      const bUrl = pair.before.url.replace('/upload/', '/upload/w_350,h_225,c_fill/');
-      const aUrl = pair.after.url.replace('/upload/', '/upload/w_350,h_225,c_fill/');
+      // BEST RESOLUTION image URLs (w_700 = crisp on print, q_auto = smart compression)
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_700,h_680,c_fill,g_auto,q_auto:best/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_700,h_680,c_fill,g_auto,q_auto:best/');
       
-      // Load BEFORE image
-      let beforeLoaded = false;
+      // BEFORE image (left side) — with graceful fallback
       try {
         const bRes = await axios.get(bUrl, { 
           responseType: 'arraybuffer',
-          timeout: 10000,
-          maxContentLength: 1.5 * 1024 * 1024
+          timeout: 12000,
+          maxContentLength: 2 * 1024 * 1024
         });
-        doc.image(Buffer.from(bRes.data), 50, currentY, { width: imgWidth, height: imgHeight });
-        beforeLoaded = true;
+        doc.image(Buffer.from(bRes.data), marginX, currentY, { width: imgWidth, height: imgHeight });
       } catch(e) { 
         console.log(`❌ Before image failed (Pair ${pair.slot}):`, e.message);
-        // Draw placeholder box
         doc.save();
-        doc.rect(50, currentY, imgWidth, imgHeight).lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.rect(marginX, currentY, imgWidth, imgHeight)
+           .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
-        doc.fontSize(11).fillColor('#999999').text(
+        doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
           '⚠️ Image unavailable', 
-          50, currentY + imgHeight/2 - 6, 
+          marginX, currentY + imgHeight/2 - 6, 
           { width: imgWidth, align: 'center' }
         );
       }
       
-      // Load AFTER image (right side)
-      let afterLoaded = false;
+      // AFTER image (right side) — with graceful fallback
       try {
         const aRes = await axios.get(aUrl, { 
           responseType: 'arraybuffer',
-          timeout: 10000,
-          maxContentLength: 1.5 * 1024 * 1024
+          timeout: 12000,
+          maxContentLength: 2 * 1024 * 1024
         });
-        doc.image(Buffer.from(aRes.data), 50 + imgWidth + 20, currentY, { width: imgWidth, height: imgHeight });
-        afterLoaded = true;
+        doc.image(Buffer.from(aRes.data), marginX + imgWidth + imgGap, currentY, { width: imgWidth, height: imgHeight });
       } catch(e) { 
         console.log(`❌ After image failed (Pair ${pair.slot}):`, e.message);
         doc.save();
-        doc.rect(50 + imgWidth + 20, currentY, imgWidth, imgHeight).lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.rect(marginX + imgWidth + imgGap, currentY, imgWidth, imgHeight)
+           .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
-        doc.fontSize(11).fillColor('#999999').text(
+        doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
           '⚠️ Image unavailable', 
-          50 + imgWidth + 20, currentY + imgHeight/2 - 6, 
+          marginX + imgWidth + imgGap, currentY + imgHeight/2 - 6, 
           { width: imgWidth, align: 'center' }
         );
       }
       
-      currentY += imgHeight + 5;
+      currentY += imgHeight + 4;
       
-      // Draw labels under images
-      doc.fontSize(10).fillColor('#666666').text('Before', 50, currentY, { width: imgWidth, align: 'center' });
-      doc.text('After', 50 + imgWidth + 20, currentY, { width: imgWidth, align: 'center' });
+      // Bold colored labels under images
+      doc.fontSize(10).fillColor('#cc3046').font('Helvetica-Bold').text('BEFORE', marginX, currentY, { width: imgWidth, align: 'center' });
+      doc.fillColor('#0d7d4f').text('AFTER', marginX + imgWidth + imgGap, currentY, { width: imgWidth, align: 'center' });
       
-      // Move doc.y to position for next pair (with proper spacing)
-      doc.y = currentY + labelHeight + 20;
+      // Reset font for next header
+      doc.font('Helvetica').fillColor('#074822');
+      
+      // Position for next pair
+      doc.y = currentY + labelHeight + pairSpacing;
     }
   }
 }
+
 // 1. Tehsil-wise PDF
 app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });
@@ -607,7 +618,7 @@ app.get('/api/download/pdf/tehsil/:district/:tehsil', auth, async (req, res) => 
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=${district}_${tehsil}_Report.pdf`);
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'LEGAL', margin: 40 });
     doc.pipe(res);
     doc.fontSize(20).fillColor('#074822').text(`${district} - ${tehsil}`, { align: 'center' });
     doc.moveDown(0.5);
