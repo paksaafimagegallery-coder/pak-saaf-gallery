@@ -660,6 +660,94 @@ app.get('/api/download/zip/overall', auth, async (req, res) => {
   } catch (err) { res.status(500).send('Failed'); }
 });
 
+// =====================================================
+// VC-SPECIFIC ARCHIVE ENDPOINTS (NEW — for VC Officers)
+// Officers can ONLY download their own VC's reports
+// Admins can download any VC's reports
+// =====================================================
+
+// 6. VC PDF Report (All Dates for one VC)
+app.get('/api/download/pdf/vc/:vcId', auth, async (req, res) => {
+  try {
+    const requestedVcId = req.params.vcId;
+    if (req.user.role === 'officer' && req.user.vcId.toString() !== requestedVcId) {
+      return res.status(403).json({ msg: 'Not authorized for this VC' });
+    }
+    const village = await Village.findById(requestedVcId);
+    if (!village) return res.status(404).send('Village Council not found.');
+    const entries = await DateEntry.find({ vcId: requestedVcId }).sort({ date: 1 });
+    if (entries.length === 0) return res.status(404).send('No images found for this VC.');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${village['Village Councils']}_VC_Report.pdf`);
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+    doc.fontSize(20).fillColor('#074822').text(`${village['Village Councils']} - VC Report`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#8a9b91').text(`${village.District} > ${village.Tehsil}`, { align: 'center' });
+    doc.fontSize(11).fillColor('#8a9b91').text(`Generated: ${new Date().toLocaleDateString()} | Total Entries: ${entries.length}`, { align: 'center' });
+    doc.moveDown(2);
+    await generatePdf(doc, entries, [village]);
+    doc.end();
+  } catch (err) { console.error('VC PDF Error:', err); res.status(500).send('PDF Generation Failed'); }
+});
+
+// 7. VC PDF Report (Single Date for one VC)
+app.get('/api/download/pdf/vc/:vcId/:date', auth, async (req, res) => {
+  try {
+    const requestedVcId = req.params.vcId;
+    const requestedDate = req.params.date;
+    if (req.user.role === 'officer' && req.user.vcId.toString() !== requestedVcId) {
+      return res.status(403).json({ msg: 'Not authorized for this VC' });
+    }
+    const village = await Village.findById(requestedVcId);
+    if (!village) return res.status(404).send('Village Council not found.');
+    const entries = await DateEntry.find({ vcId: requestedVcId, date: requestedDate }).sort({ date: 1 });
+    if (entries.length === 0) return res.status(404).send(`No images found for date ${requestedDate}.`);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${village['Village Councils']}_${requestedDate}_Report.pdf`);
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+    doc.fontSize(20).fillColor('#074822').text(`${village['Village Councils']} - Date Report`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#8a9b91').text(`${village.District} > ${village.Tehsil}`, { align: 'center' });
+    doc.fontSize(11).fillColor('#8a9b91').text(`Date: ${requestedDate} | Generated: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.moveDown(2);
+    await generatePdf(doc, entries, [village]);
+    doc.end();
+  } catch (err) { console.error('VC Date PDF Error:', err); res.status(500).send('PDF Generation Failed'); }
+});
+
+// 8. VC ZIP Archive (All Dates for one VC)
+app.get('/api/download/zip/vc/:vcId', auth, async (req, res) => {
+  try {
+    const requestedVcId = req.params.vcId;
+    if (req.user.role === 'officer' && req.user.vcId.toString() !== requestedVcId) {
+      return res.status(403).json({ msg: 'Not authorized for this VC' });
+    }
+    const village = await Village.findById(requestedVcId);
+    if (!village) return res.status(404).send('Village Council not found.');
+    const entries = await DateEntry.find({ vcId: requestedVcId });
+    if (entries.length === 0) return res.status(404).send('No images found for this VC.');
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename=${village['Village Councils']}_VC_Archive.zip`);
+    const zip = archiver('zip', { zlib: { level: 9 } });
+    zip.pipe(res);
+    for (const entry of entries) {
+      for (const pair of entry.pairs) {
+        const bRes = await axios.get(pair.before.url, { responseType: 'arraybuffer' });
+        zip.append(Buffer.from(bRes.data, 'binary'), { name: `${entry.date}/pair${pair.slot}_before.jpg` });
+        const aRes = await axios.get(pair.after.url, { responseType: 'arraybuffer' });
+        zip.append(Buffer.from(aRes.data, 'binary'), { name: `${entry.date}/pair${pair.slot}_after.jpg` });
+      }
+    }
+    await zip.finalize();
+  } catch (err) { console.error('VC ZIP Error:', err); res.status(500).send('Failed'); }
+});
+
+
 // --- CLOUDINARY USAGE API (Admin Only) ---
 app.get('/api/cloudinary/usage', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Admin only' });

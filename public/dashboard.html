@@ -144,7 +144,7 @@ tr:last-child td{border-bottom:none}
   <div class="nav-section">
     <div class="nav-section-title">Administration</div>
     <a class="nav-item" data-section="users" id="navUsers" style="display:none"><span class="nav-icon">👥</span> User Management</a>
-    <a class="nav-item" data-section="archive" id="navArchive" style="display:none"><span class="nav-icon">🗄️</span> Data Archive</a>
+    <a class="nav-item" data-section="archive" id="navArchive"><span class="nav-icon">🗄️</span> Data Archive</a>
     <a class="nav-item" data-section="storage" id="navStorage" style="display:none"><span class="nav-icon">☁️</span> Cloud Storage</a>
   </div>
   <div class="nav-section">
@@ -162,7 +162,6 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 </aside>
-
 <main class="main">
   <div class="topbar">
     <div class="topbar-left">
@@ -220,7 +219,7 @@ tr:last-child td{border-bottom:none}
         <input type="text" id="a_vc_search" list="vclist" placeholder="Search VC to filter analytics (leave empty for Global)..." style="flex:2;min-width:200px;margin-bottom:0;padding:11px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(0,0,0,0.25);color:var(--text-bright);font-size:13px;box-sizing:border-box">
         <button class="btn" style="width:auto;padding:11px 20px;margin-bottom:0;" onclick="loadAnalytics()">🔍 Filter Analytics</button>
       </div>
-      <div class="analytics-row">
+      <div class="analytics-row" id="analyticsRow">
         <div class="stat-box"><h3 id="statTotalVcs">0</h3><p>Total VCs</p></div>
         <div class="stat-box"><h3 id="statUploadedToday">0</h3><p>Uploaded Today</p></div>
         <div class="stat-box"><h3 id="statUploaded6Days">0</h3><p>Uploaded (6 Days)</p></div>
@@ -282,37 +281,69 @@ tr:last-child td{border-bottom:none}
     <div class="card">
       <h2>🗄️ Data Archive Center</h2>
       <p style="color:var(--text-soft);font-size:13px;margin-bottom:20px;line-height:1.6;">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them.<br><strong style="color:var(--red-alert);">Note:</strong> PDFs are limited to 50 images per file to prevent server timeouts. For bulk downloads, use ZIP.</p>
-      <div class="archive-grid">
-        <div class="archive-tile">
-          <h3>1. Tehsil-wise PDF</h3>
-          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Single tehsil report, max 50 images.</p>
-          <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="margin-bottom:8px"></select>
-          <select id="pdfTehsilSelect" style="margin-bottom:10px"></select>
-          <button class="btn-gold" style="width:100%" onclick="downloadPDF()">📄 Download PDF</button>
-        </div>
-        <div class="archive-tile">
-          <h3>2. District-wise PDF</h3>
-          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All tehsils in a district, max 50 images.</p>
-          <select id="pdfDistOnlySelect" style="margin-bottom:10px"></select>
-          <button class="btn-gold" style="width:100%" onclick="downloadDistrictPDF()">📄 Download PDF</button>
-        </div>
-        <div class="archive-tile">
-          <h3>3. Overall Provincial PDF</h3>
-          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts summary, max 50 images.</p>
-          <button class="btn-gold" style="width:100%" onclick="downloadOverallPDF()">📄 Download PDF</button>
-        </div>
-        <div class="archive-tile">
-          <h3>4. District ZIP Archive</h3>
-          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Full-resolution images, organized by folders. No limit.</p>
-          <select id="zipDistSelect" style="margin-bottom:10px"></select>
-          <button class="btn" style="width:100%" onclick="downloadZip()">⬇ Download ZIP</button>
-        </div>
-        <div class="archive-tile">
-          <h3>5. Overall Provincial ZIP</h3>
-          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts in one ZIP. No image limit. May take several minutes.</p>
-          <button class="btn" style="width:100%" onclick="downloadOverallZip()">⬇ Download ZIP</button>
+
+      <div id="adminArchiveUI">
+        <div class="archive-grid">
+          <div class="archive-tile">
+            <h3>1. Tehsil-wise PDF</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Single tehsil report, max 50 images.</p>
+            <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="margin-bottom:8px"></select>
+            <select id="pdfTehsilSelect" style="margin-bottom:10px"></select>
+            <button class="btn-gold" style="width:100%" onclick="downloadPDF()">📄 Download PDF</button>
+          </div>
+          <div class="archive-tile">
+            <h3>2. District-wise PDF</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All tehsils in a district, max 50 images.</p>
+            <select id="pdfDistOnlySelect" style="margin-bottom:10px"></select>
+            <button class="btn-gold" style="width:100%" onclick="downloadDistrictPDF()">📄 Download PDF</button>
+          </div>
+          <div class="archive-tile">
+            <h3>3. Overall Provincial PDF</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts summary, max 50 images.</p>
+            <button class="btn-gold" style="width:100%" onclick="downloadOverallPDF()">📄 Download PDF</button>
+          </div>
+          <div class="archive-tile">
+            <h3>4. District ZIP Archive</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Full-resolution images, organized by folders. No limit.</p>
+            <select id="zipDistSelect" style="margin-bottom:10px"></select>
+            <button class="btn" style="width:100%" onclick="downloadZip()">⬇ Download ZIP</button>
+          </div>
+          <div class="archive-tile">
+            <h3>5. Overall Provincial ZIP</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts in one ZIP. No image limit. May take several minutes.</p>
+            <button class="btn" style="width:100%" onclick="downloadOverallZip()">⬇ Download ZIP</button>
+          </div>
         </div>
       </div>
+
+      <div id="officerArchiveUI" style="display:none">
+        <div style="background:rgba(25,195,125,0.08);border:1px solid rgba(25,195,125,0.3);border-radius:12px;padding:18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="font-size:32px;">🏘️</div>
+          <div>
+            <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:16px;color:var(--text-bright);">Your Village Council Reports</div>
+            <div style="font-size:13px;color:var(--text-soft);margin-top:2px;" id="officerVcLabel">Loading…</div>
+          </div>
+        </div>
+        <div class="archive-grid">
+          <div class="archive-tile">
+            <h3>📄 VC Report (All Dates)</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Complete PDF report of all your uploaded images (6-day window). Includes all before/after pairs.</p>
+            <button class="btn-gold" style="width:100%" onclick="downloadVcPdfAll()">📄 Download PDF</button>
+          </div>
+          <div class="archive-tile">
+            <h3>📄 VC Report (Specific Date)</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">PDF report for a single date's uploads. Pick a date below.</p>
+            <select id="vcDateSelect" style="margin-bottom:10px"></select>
+            <button class="btn-gold" style="width:100%" onclick="downloadVcPdfDate()">📄 Download PDF</button>
+          </div>
+          <div class="archive-tile">
+            <h3>📦 VC ZIP Archive (All Dates)</h3>
+            <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Full-resolution images organized by date folders. No image limit. Best for permanent backup.</p>
+            <button class="btn" style="width:100%" onclick="downloadVcZip()">⬇ Download ZIP</button>
+          </div>
+        </div>
+      </div>
+
       <p id="archiveMsg" style="font-size:13px;margin-top:20px;text-align:center;"></p>
     </div>
   </div>
@@ -357,7 +388,6 @@ tr:last-child td{border-bottom:none}
   </div>
 
 </main>
-
 <script>
 let hierarchy={},userRole=localStorage.getItem('role'),token=localStorage.getItem('token'),vcId=localStorage.getItem('vcId'),chartInstance=null;
 let currentUserPage=1;let nonCompliantData=[];let storageChartInstance=null;let bandwidthChartInstance=null;
@@ -375,7 +405,7 @@ document.querySelectorAll('.nav-item[data-section]').forEach(item=>{item.addEven
 function buildUploaders(){let html='';for(let i=1;i<=4;i++)html+=`<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`;document.getElementById('pairUploaders').innerHTML=html;}
 function getPakistanDateString(date=new Date()){const pkTime=new Date(date.getTime()+(5*60*60*1000));const year=pkTime.getUTCFullYear();const month=String(pkTime.getUTCMonth()+1).padStart(2,'0');const day=String(pkTime.getUTCDate()).padStart(2,'0');return`${year}-${month}-${day}`;}
 function getRecentPakistanDates(count){const dates=[];let daysAgo=0;while(dates.length<count){const d=new Date();d.setDate(d.getDate()-daysAgo);const pkDate=new Date(d.getTime()+(5*60*60*1000));if(pkDate.getUTCDay()!==0){dates.push(getPakistanDateString(d));}daysAgo++;}return dates;}
-async function init(){buildUploaders();const recentDates=getRecentPakistanDates(6);const dateOptionsHtml=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('date').innerHTML=dateOptionsHtml;document.getElementById('g_date').innerHTML='<option value="">All Dates</option>'+dateOptionsHtml;const res=await fetch('/api/hierarchy');const villages=await res.json();villages.forEach(v=>{if(!hierarchy[v.District])hierarchy[v.District]={};if(!hierarchy[v.District][v.Tehsil])hierarchy[v.District][v.Tehsil]=[];hierarchy[v.District][v.Tehsil].push(v);});if(userRole==='admin'){document.getElementById('userName').textContent='DGLG Admin';document.getElementById('userRole').textContent='Super Admin';document.getElementById('userAvatar').textContent='AD';document.getElementById('distName').innerText="DGLG Main Admin (All Districts)";document.getElementById('adminSelects').style.display='block';document.getElementById('navNonCompliant').style.display='flex';document.getElementById('navUsers').style.display='flex';document.getElementById('navArchive').style.display='flex';document.getElementById('navStorage').style.display='flex';document.getElementById('analyticsFilters').style.display='flex';document.getElementById('galleryFilters').style.display='flex';}else{document.getElementById('userName').textContent=localStorage.getItem('vcName')||'Officer';document.getElementById('userRole').textContent='VC Officer';document.getElementById('userAvatar').textContent='VC';document.getElementById('distName').innerText=`${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;document.getElementById('galleryFilters').style.display='flex';document.getElementById('g_vc_search').style.display='none';document.getElementById('officerVcName').style.display='block';document.getElementById('officerVcName').querySelector('strong').innerText=localStorage.getItem('vcName');}if(userRole==='admin'){let dHtml='<option value="">Select District</option>';Object.keys(hierarchy).forEach(d=>dHtml+=`<option>${d}</option>`);document.getElementById('distSelect').innerHTML=dHtml;document.getElementById('newDistSelect').innerHTML=dHtml;document.getElementById('pdfDistSelect').innerHTML=dHtml;document.getElementById('pdfDistOnlySelect').innerHTML=dHtml;document.getElementById('zipDistSelect').innerHTML=dHtml;let vcListHtml='';Object.keys(hierarchy).forEach(d=>{Object.keys(hierarchy[d]).forEach(t=>{hierarchy[d][t].forEach(v=>{vcListHtml+=`<option value="${v['Village Councils']}">`;});});});document.getElementById('vclist').innerHTML=vcListHtml;let ncDateHtml='<option value="overall">Overall (Last 6 Days)</option>';ncDateHtml+=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('nonCompliantDateSelect').innerHTML=ncDateHtml;document.getElementById('userDateFilter').innerHTML='<option value="">All Dates (Accounts)</option>'+dateOptionsHtml;}document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please select a date and click Load Images to view data.</p>';}
+async function init(){buildUploaders();const recentDates=getRecentPakistanDates(6);const dateOptionsHtml=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('date').innerHTML=dateOptionsHtml;document.getElementById('g_date').innerHTML='<option value="">All Dates</option>'+dateOptionsHtml;const res=await fetch('/api/hierarchy');const villages=await res.json();villages.forEach(v=>{if(!hierarchy[v.District])hierarchy[v.District]={};if(!hierarchy[v.District][v.Tehsil])hierarchy[v.District][v.Tehsil]=[];hierarchy[v.District][v.Tehsil].push(v);});if(userRole==='admin'){document.getElementById('userName').textContent='DGLG Admin';document.getElementById('userRole').textContent='Super Admin';document.getElementById('userAvatar').textContent='AD';document.getElementById('distName').innerText="DGLG Main Admin (All Districts)";document.getElementById('adminSelects').style.display='block';document.getElementById('navNonCompliant').style.display='flex';document.getElementById('navUsers').style.display='flex';document.getElementById('navStorage').style.display='flex';document.getElementById('analyticsFilters').style.display='flex';document.getElementById('galleryFilters').style.display='flex';}else{document.getElementById('userName').textContent=localStorage.getItem('vcName')||'Officer';document.getElementById('userRole').textContent='VC Officer';document.getElementById('userAvatar').textContent='VC';document.getElementById('distName').innerText=`${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;document.getElementById('galleryFilters').style.display='flex';document.getElementById('g_vc_search').style.display='none';document.getElementById('officerVcName').style.display='block';document.getElementById('officerVcName').querySelector('strong').innerText=localStorage.getItem('vcName');document.getElementById('adminArchiveUI').style.display='none';document.getElementById('officerArchiveUI').style.display='block';document.getElementById('officerVcLabel').innerText=`${localStorage.getItem('vcName')} (${localStorage.getItem('district')})`;}if(userRole==='admin'){let dHtml='<option value="">Select District</option>';Object.keys(hierarchy).forEach(d=>dHtml+=`<option>${d}</option>`);document.getElementById('distSelect').innerHTML=dHtml;document.getElementById('newDistSelect').innerHTML=dHtml;document.getElementById('pdfDistSelect').innerHTML=dHtml;document.getElementById('pdfDistOnlySelect').innerHTML=dHtml;document.getElementById('zipDistSelect').innerHTML=dHtml;let vcListHtml='';Object.keys(hierarchy).forEach(d=>{Object.keys(hierarchy[d]).forEach(t=>{hierarchy[d][t].forEach(v=>{vcListHtml+=`<option value="${v['Village Councils']}">`;});});});document.getElementById('vclist').innerHTML=vcListHtml;let ncDateHtml='<option value="overall">Overall (Last 6 Days)</option>';ncDateHtml+=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('nonCompliantDateSelect').innerHTML=ncDateHtml;document.getElementById('userDateFilter').innerHTML='<option value="">All Dates (Accounts)</option>'+dateOptionsHtml;}const vcDateSelect=document.getElementById('vcDateSelect');if(vcDateSelect){vcDateSelect.innerHTML='<option value="">Select a date…</option>'+dateOptionsHtml;}document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please select a date and click Load Images to view data.</p>';}
 async function loadAnalytics(){let url='/api/stats/compliance';if(userRole==='admin'){const searchName=document.getElementById('a_vc_search').value.toLowerCase();if(searchName){let foundVc=null;for(const d in hierarchy){for(const t in hierarchy[d]){foundVc=hierarchy[d][t].find(v=>v['Village Councils'].toLowerCase().includes(searchName));if(foundVc)break;}if(foundVc)break;}if(foundVc){url+='?vcId='+foundVc._id;}else{document.getElementById('statTotalVcs').innerText='0';document.getElementById('statUploadedToday').innerText='0';document.getElementById('statUploaded6Days').innerText='0';if(chartInstance)chartInstance.destroy();alert('No Village Council found with that name.');return;}}}const res=await fetch(url,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();document.getElementById('statTotalVcs').innerText=data.totalVcs;document.getElementById('statUploadedToday').innerText=data.uploadedTodayCount;document.getElementById('statUploaded6Days').innerText=data.uploaded6DaysCount;if(chartInstance)chartInstance.destroy();const ctx=document.getElementById('districtChart').getContext('2d');const dataLabelPlugin={id:'dataLabelPlugin',afterDatasetsDraw(chart){const{ctx}=chart;ctx.save();ctx.font='700 12px Inter, sans-serif';ctx.fillStyle='#2bff9a';ctx.textAlign='center';chart.data.datasets[0].data.forEach((value,index)=>{const meta=chart.getDatasetMeta(0);const bar=meta.data[index];if(bar)ctx.fillText(value+'%',bar.x,bar.y-8);});ctx.restore();}};chartInstance=new Chart(ctx,{type:'bar',data:{labels:data.chartLabels,datasets:[{label:'Daily Compliance %',data:data.chartData,backgroundColor:'#19c37d',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(4,19,13,0.95)',titleColor:'#2bff9a',bodyColor:'#f3fff8',borderColor:'#19c37d',borderWidth:1,callbacks:{label:function(context){return context.raw+'% Compliance';}}}},scales:{y:{beginAtZero:true,max:100,ticks:{color:'#a7c4b6',callback:function(value){return value+'%';},font:{family:'Inter',size:11}},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#a7c4b6',font:{family:'Inter',size:11}},grid:{display:false}}}},plugins:[dataLabelPlugin]});}
 async function loadCloudinaryUsage(){const res=await fetch('/api/cloudinary/usage',{headers:{'Authorization':'Bearer '+token}});if(!res.ok)return;const data=await res.json();if(storageChartInstance)storageChartInstance.destroy();if(bandwidthChartInstance)bandwidthChartInstance.destroy();const sCtx=document.getElementById('storageChart').getContext('2d');const storageRemaining=data.storage.limit-data.storage.used;document.getElementById('storageText').innerText=`${data.storage.used} MB / ${data.storage.limit} MB`;storageChartInstance=new Chart(sCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.storage.used,storageRemaining>0?storageRemaining:0],backgroundColor:['#ff5a6e','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});const bCtx=document.getElementById('bandwidthChart').getContext('2d');const bandwidthRemaining=data.bandwidth.limit-data.bandwidth.used;document.getElementById('bandwidthText').innerText=`${data.bandwidth.used} MB / ${data.bandwidth.limit} MB`;bandwidthChartInstance=new Chart(bCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.bandwidth.used,bandwidthRemaining>0?bandwidthRemaining:0],backgroundColor:['#f4b740','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});}
 async function loadNonCompliant(){const selectedDate=document.getElementById('nonCompliantDateSelect').value;if(!selectedDate)return;const res=await fetch(`/api/stats/noncompliant?date=${selectedDate}`,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();nonCompliantData=data.villages;if(selectedDate==='overall')document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Overall - Last 6 Days)`;else{const formattedDate=new Date(selectedDate+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'});document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Date: ${formattedDate})`;}document.getElementById('nonCompliantCount').innerText=`Total: ${data.count} VCs`;document.getElementById('nonCompliantBadge').innerText=data.count;document.getElementById('nonCompliantBody').innerHTML=data.villages.map(v=>`<tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');}
@@ -394,6 +424,9 @@ async function generateAccounts(){if(!confirm('This will create accounts for all
 async function downloadCSV(){window.location.href='/api/users/csv?token='+token;}
 async function resetPass(id){await fetch(`/api/users/reset/${id}`,{method:'POST',headers:{'Authorization':'Bearer '+token}});alert('Password reset to 12345');}
 async function deleteUser(id){if(!confirm('Delete this user?'))return;await fetch(`/api/users/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});loadUsers();}
+async function downloadVcPdfAll(){document.getElementById('archiveMsg').innerText='Generating VC PDF (All Dates)... This may take 10-30 seconds.';try{const res=await fetch(`/api/download/pdf/vc/${vcId}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`VC_${localStorage.getItem('vcName')||'Report'}_All_Dates.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ VC PDF (All Dates) downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
+async function downloadVcPdfDate(){const selectedDate=document.getElementById('vcDateSelect').value;if(!selectedDate)return alert('Please select a date first.');document.getElementById('archiveMsg').innerText=`Generating VC PDF for ${selectedDate}...`;try{const res=await fetch(`/api/download/pdf/vc/${vcId}/${selectedDate}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`VC_${localStorage.getItem('vcName')||'Report'}_${selectedDate}.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText=`✅ VC PDF for ${selectedDate} downloaded successfully!`;}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
+async function downloadVcZip(){document.getElementById('archiveMsg').innerText='Generating VC ZIP Archive... This may take 30-60 seconds.';try{const res=await fetch(`/api/download/zip/vc/${vcId}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok)throw new Error('Failed');const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`VC_${localStorage.getItem('vcName')||'Archive'}_All_Dates.zip`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ VC ZIP Archive downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ Failed to generate VC ZIP.';}}
 async function downloadPDF(){const d=document.getElementById('pdfDistSelect').value;const t=document.getElementById('pdfTehsilSelect').value;if(!d||!t)return alert('Please select District and Tehsil first.');document.getElementById('archiveMsg').innerText='Generating Tehsil PDF... This may take 30-60 seconds depending on data size.';try{const res=await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${d}_${t}_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ Tehsil PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
 async function downloadDistrictPDF(){const d=document.getElementById('pdfDistOnlySelect').value;if(!d)return alert('Please select a District first.');document.getElementById('archiveMsg').innerText='Generating District PDF... This may take 30-60 seconds depending on data size.';try{const res=await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${d}_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ District PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
 async function downloadOverallPDF(){document.getElementById('archiveMsg').innerText='Generating Overall Provincial PDF... This may take 60+ seconds.';try{const res=await fetch(`/api/download/pdf/overall`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Overall_Provincial_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ Overall PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
