@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2026-10-22-v2">
+<meta name="version" content="2026-10-22-v3">
 <meta name="theme-color" content="#04130d">
 <title>Dashboard | Pak Saaf</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -37,8 +37,14 @@ body{
 .sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:rgba(4,19,13,0.92);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-right:1px solid var(--glass-border);padding:20px 14px;display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform 0.3s ease}
 .sidebar::-webkit-scrollbar{width:6px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:3px}
-.brand{display:flex;align-items:center;gap:12px;padding:6px 8px 18px;border-bottom:1px solid var(--glass-border);margin-bottom:18px}
-.logo-img{height:38px;border-radius:9px;background:rgba(255,255,255,0.95);padding:2px;box-shadow:0 4px 10px rgba(0,0,0,0.3);flex-shrink:0}
+.brand{display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 8px 18px;border-bottom:1px solid var(--glass-border);margin-bottom:18px}
+.brand-logo-link{display:flex;align-items:center;flex-shrink:0;text-decoration:none;transition:transform 0.2s}
+.brand-logo-link:hover{transform:scale(1.08)}
+.brand-logo-link:hover .logo-img{box-shadow:0 6px 16px rgba(25,195,125,0.5)}
+.brand-text-link{text-decoration:none;color:inherit;transition:transform 0.2s;text-align:center}
+.brand-text-link:hover{transform:scale(1.03)}
+.brand-text-link:hover .brand-title{background:linear-gradient(135deg,#ffffff,#ffd76b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.logo-img{height:38px;border-radius:9px;background:rgba(255,255,255,0.95);padding:2px;box-shadow:0 4px 10px rgba(0,0,0,0.3);flex-shrink:0;transition:box-shadow 0.2s}
 .brand-text{display:flex;flex-direction:column;line-height:1.2;min-width:0}
 .brand-title{font-family:'Plus Jakarta Sans';font-weight:800;font-size:15px;letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand-sub{font-size:10px;color:var(--text-soft);text-transform:uppercase;letter-spacing:1.2px}
@@ -127,12 +133,18 @@ tr:last-child td{border-bottom:none}
 
 <aside class="sidebar" id="sidebar">
   <div class="brand">
-    <img src="/images/kp-logo.png" class="logo-img" alt="KP">
-    <img src="/images/dglg-logo.png" class="logo-img" alt="DGLG">
-    <div class="brand-text">
-      <span class="brand-title">Pak Saaf</span>
-      <span class="brand-sub">Dashboard</span>
-    </div>
+    <a href="https://kp.gov.pk/" target="_blank" rel="noopener" title="Government of KP - Official Website" class="brand-logo-link">
+      <img src="/images/kp-logo.png" class="logo-img" alt="KP Government">
+    </a>
+    <a href="/index.html" title="Pak Saaf Image Gallery - Home" class="brand-text-link">
+      <div class="brand-text">
+        <span class="brand-title">Pak Saaf</span>
+        <span class="brand-sub">Dashboard</span>
+      </div>
+    </a>
+    <a href="https://www.lgkp.gov.pk/" target="_blank" rel="noopener" title="LG&RDD KP - Official Website" class="brand-logo-link">
+      <img src="/images/dglg-logo.png" class="logo-img" alt="DGLG">
+    </a>
   </div>
   <div class="nav-section">
     <div class="nav-section-title">Monitoring</div>
@@ -219,7 +231,7 @@ tr:last-child td{border-bottom:none}
         <input type="text" id="a_vc_search" list="vclist" placeholder="Search VC to filter analytics (leave empty for Global)..." style="flex:2;min-width:200px;margin-bottom:0;padding:11px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(0,0,0,0.25);color:var(--text-bright);font-size:13px;box-sizing:border-box">
         <button class="btn" style="width:auto;padding:11px 20px;margin-bottom:0;" onclick="loadAnalytics()">🔍 Filter Analytics</button>
       </div>
-      <div class="analytics-row" id="analyticsRow">
+      <div class="analytics-row">
         <div class="stat-box"><h3 id="statTotalVcs">0</h3><p>Total VCs</p></div>
         <div class="stat-box"><h3 id="statUploadedToday">0</h3><p>Uploaded Today</p></div>
         <div class="stat-box"><h3 id="statUploaded6Days">0</h3><p>Uploaded (6 Days)</p></div>
@@ -388,6 +400,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
 </main>
+
 <script>
 let hierarchy={},userRole=localStorage.getItem('role'),token=localStorage.getItem('token'),vcId=localStorage.getItem('vcId'),chartInstance=null;
 let currentUserPage=1;let nonCompliantData=[];let storageChartInstance=null;let bandwidthChartInstance=null;
@@ -407,6 +420,39 @@ function getPakistanDateString(date=new Date()){const pkTime=new Date(date.getTi
 function getRecentPakistanDates(count){const dates=[];let daysAgo=0;while(dates.length<count){const d=new Date();d.setDate(d.getDate()-daysAgo);const pkDate=new Date(d.getTime()+(5*60*60*1000));if(pkDate.getUTCDay()!==0){dates.push(getPakistanDateString(d));}daysAgo++;}return dates;}
 async function init(){buildUploaders();const recentDates=getRecentPakistanDates(6);const dateOptionsHtml=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('date').innerHTML=dateOptionsHtml;document.getElementById('g_date').innerHTML='<option value="">All Dates</option>'+dateOptionsHtml;const res=await fetch('/api/hierarchy');const villages=await res.json();villages.forEach(v=>{if(!hierarchy[v.District])hierarchy[v.District]={};if(!hierarchy[v.District][v.Tehsil])hierarchy[v.District][v.Tehsil]=[];hierarchy[v.District][v.Tehsil].push(v);});if(userRole==='admin'){document.getElementById('userName').textContent='DGLG Admin';document.getElementById('userRole').textContent='Super Admin';document.getElementById('userAvatar').textContent='AD';document.getElementById('distName').innerText="DGLG Main Admin (All Districts)";document.getElementById('adminSelects').style.display='block';document.getElementById('navNonCompliant').style.display='flex';document.getElementById('navUsers').style.display='flex';document.getElementById('navStorage').style.display='flex';document.getElementById('analyticsFilters').style.display='flex';document.getElementById('galleryFilters').style.display='flex';}else{document.getElementById('userName').textContent=localStorage.getItem('vcName')||'Officer';document.getElementById('userRole').textContent='VC Officer';document.getElementById('userAvatar').textContent='VC';document.getElementById('distName').innerText=`${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;document.getElementById('galleryFilters').style.display='flex';document.getElementById('g_vc_search').style.display='none';document.getElementById('officerVcName').style.display='block';document.getElementById('officerVcName').querySelector('strong').innerText=localStorage.getItem('vcName');document.getElementById('adminArchiveUI').style.display='none';document.getElementById('officerArchiveUI').style.display='block';document.getElementById('officerVcLabel').innerText=`${localStorage.getItem('vcName')} (${localStorage.getItem('district')})`;}if(userRole==='admin'){let dHtml='<option value="">Select District</option>';Object.keys(hierarchy).forEach(d=>dHtml+=`<option>${d}</option>`);document.getElementById('distSelect').innerHTML=dHtml;document.getElementById('newDistSelect').innerHTML=dHtml;document.getElementById('pdfDistSelect').innerHTML=dHtml;document.getElementById('pdfDistOnlySelect').innerHTML=dHtml;document.getElementById('zipDistSelect').innerHTML=dHtml;let vcListHtml='';Object.keys(hierarchy).forEach(d=>{Object.keys(hierarchy[d]).forEach(t=>{hierarchy[d][t].forEach(v=>{vcListHtml+=`<option value="${v['Village Councils']}">`;});});});document.getElementById('vclist').innerHTML=vcListHtml;let ncDateHtml='<option value="overall">Overall (Last 6 Days)</option>';ncDateHtml+=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('nonCompliantDateSelect').innerHTML=ncDateHtml;document.getElementById('userDateFilter').innerHTML='<option value="">All Dates (Accounts)</option>'+dateOptionsHtml;}const vcDateSelect=document.getElementById('vcDateSelect');if(vcDateSelect){vcDateSelect.innerHTML='<option value="">Select a date…</option>'+dateOptionsHtml;}document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please select a date and click Load Images to view data.</p>';}
 async function loadAnalytics(){let url='/api/stats/compliance';if(userRole==='admin'){const searchName=document.getElementById('a_vc_search').value.toLowerCase();if(searchName){let foundVc=null;for(const d in hierarchy){for(const t in hierarchy[d]){foundVc=hierarchy[d][t].find(v=>v['Village Councils'].toLowerCase().includes(searchName));if(foundVc)break;}if(foundVc)break;}if(foundVc){url+='?vcId='+foundVc._id;}else{document.getElementById('statTotalVcs').innerText='0';document.getElementById('statUploadedToday').innerText='0';document.getElementById('statUploaded6Days').innerText='0';if(chartInstance)chartInstance.destroy();alert('No Village Council found with that name.');return;}}}const res=await fetch(url,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();document.getElementById('statTotalVcs').innerText=data.totalVcs;document.getElementById('statUploadedToday').innerText=data.uploadedTodayCount;document.getElementById('statUploaded6Days').innerText=data.uploaded6DaysCount;if(chartInstance)chartInstance.destroy();const ctx=document.getElementById('districtChart').getContext('2d');const dataLabelPlugin={id:'dataLabelPlugin',afterDatasetsDraw(chart){const{ctx}=chart;ctx.save();ctx.font='700 12px Inter, sans-serif';ctx.fillStyle='#2bff9a';ctx.textAlign='center';chart.data.datasets[0].data.forEach((value,index)=>{const meta=chart.getDatasetMeta(0);const bar=meta.data[index];if(bar)ctx.fillText(value+'%',bar.x,bar.y-8);});ctx.restore();}};chartInstance=new Chart(ctx,{type:'bar',data:{labels:data.chartLabels,datasets:[{label:'Daily Compliance %',data:data.chartData,backgroundColor:'#19c37d',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(4,19,13,0.95)',titleColor:'#2bff9a',bodyColor:'#f3fff8',borderColor:'#19c37d',borderWidth:1,callbacks:{label:function(context){return context.raw+'% Compliance';}}}},scales:{y:{beginAtZero:true,max:100,ticks:{color:'#a7c4b6',callback:function(value){return value+'%';},font:{family:'Inter',size:11}},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#a7c4b6',font:{family:'Inter',size:11}},grid:{display:false}}}},plugins:[dataLabelPlugin]});}
+
+// ============ AUTO-REFRESH for Analytics Search Box ============
+// When admin types in the VC search box, debounce the refresh (300ms delay)
+// When search is cleared (empty), immediately refresh to global view (3,633 VCs)
+// When search matches a VC, auto-filter to show that VC's stats
+let analyticsSearchTimer = null;
+function setupAnalyticsAutoRefresh() {
+  const searchInput = document.getElementById('a_vc_search');
+  if (!searchInput) return;
+  if (searchInput.dataset.autoRefresh === 'true') return;
+  searchInput.dataset.autoRefresh = 'true';
+
+  searchInput.addEventListener('input', function() {
+    if (analyticsSearchTimer) clearTimeout(analyticsSearchTimer);
+    analyticsSearchTimer = setTimeout(() => {
+      loadAnalytics();
+    }, 300);
+  });
+
+  searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (analyticsSearchTimer) clearTimeout(analyticsSearchTimer);
+      loadAnalytics();
+    }
+  });
+}
+const originalInit = init;
+init = async function() {
+  await originalInit();
+  setupAnalyticsAutoRefresh();
+};
+
 async function loadCloudinaryUsage(){const res=await fetch('/api/cloudinary/usage',{headers:{'Authorization':'Bearer '+token}});if(!res.ok)return;const data=await res.json();if(storageChartInstance)storageChartInstance.destroy();if(bandwidthChartInstance)bandwidthChartInstance.destroy();const sCtx=document.getElementById('storageChart').getContext('2d');const storageRemaining=data.storage.limit-data.storage.used;document.getElementById('storageText').innerText=`${data.storage.used} MB / ${data.storage.limit} MB`;storageChartInstance=new Chart(sCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.storage.used,storageRemaining>0?storageRemaining:0],backgroundColor:['#ff5a6e','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});const bCtx=document.getElementById('bandwidthChart').getContext('2d');const bandwidthRemaining=data.bandwidth.limit-data.bandwidth.used;document.getElementById('bandwidthText').innerText=`${data.bandwidth.used} MB / ${data.bandwidth.limit} MB`;bandwidthChartInstance=new Chart(bCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.bandwidth.used,bandwidthRemaining>0?bandwidthRemaining:0],backgroundColor:['#f4b740','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});}
 async function loadNonCompliant(){const selectedDate=document.getElementById('nonCompliantDateSelect').value;if(!selectedDate)return;const res=await fetch(`/api/stats/noncompliant?date=${selectedDate}`,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();nonCompliantData=data.villages;if(selectedDate==='overall')document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Overall - Last 6 Days)`;else{const formattedDate=new Date(selectedDate+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'});document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Date: ${formattedDate})`;}document.getElementById('nonCompliantCount').innerText=`Total: ${data.count} VCs`;document.getElementById('nonCompliantBadge').innerText=data.count;document.getElementById('nonCompliantBody').innerHTML=data.villages.map(v=>`<tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');}
 function downloadNonCompliantCSV(){let csv='District,Tehsil,Village Council,Assigned Officer\n';nonCompliantData.forEach(v=>{csv+=`${v.district},${v.tehsil},${v.vcName},${v.officer}\n`;});const blob=new Blob([csv],{type:'text/csv'});const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Non_Compliant_VCs.csv';document.body.appendChild(a);a.click();a.remove();}
