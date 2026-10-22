@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2026-10-22-v1">
+<meta name="version" content="2026-10-22-v2">
 <meta name="theme-color" content="#04130d">
 <title>Dashboard | Pak Saaf</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,27 +16,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg-deep:#04130d;
-  --bg-mid:#0a2a1e;
-  --bg-soft:#10392a;
-  --glass:rgba(255,255,255,0.05);
-  --glass-strong:rgba(255,255,255,0.09);
-  --glass-border:rgba(255,255,255,0.10);
-  --green-primary:#19c37d;
-  --green-glow:#2bff9a;
-  --green-deep:#0d7d4f;
-  --gold:#f4b740;
-  --gold-soft:#ffd76b;
-  --red-alert:#ff5a6e;
-  --red-soft:#ff8090;
-  --yellow-warn:#ffd76b;
-  --blue-info:#3aa6ff;
-  --text-bright:#f3fff8;
-  --text-soft:#a7c4b6;
-  --text-mute:#6f8a7e;
-  --radius:16px;
+  --bg-deep:#04130d;--bg-mid:#0a2a1e;--bg-soft:#10392a;
+  --glass:rgba(255,255,255,0.05);--glass-strong:rgba(255,255,255,0.09);--glass-border:rgba(255,255,255,0.10);
+  --green-primary:#19c37d;--green-glow:#2bff9a;--green-deep:#0d7d4f;
+  --gold:#f4b740;--gold-soft:#ffd76b;
+  --red-alert:#ff5a6e;--red-soft:#ff8090;
+  --text-bright:#f3fff8;--text-soft:#a7c4b6;--text-mute:#6f8a7e;
+  --sidebar-w:260px;--radius:16px;
 }
-
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   font-family:'Inter',sans-serif;
@@ -44,305 +31,205 @@ body{
     radial-gradient(ellipse at 0% 0%, rgba(25,195,125,0.15) 0%, transparent 40%),
     radial-gradient(ellipse at 100% 100%, rgba(244,183,64,0.08) 0%, transparent 40%),
     linear-gradient(180deg, var(--bg-deep), var(--bg-mid));
-  background-attachment:fixed;
-  color:var(--text-bright);
-  min-height:100vh;
-  display:flex;flex-direction:column;
-  -webkit-font-smoothing:antialiased;
+  background-attachment:fixed;color:var(--text-bright);
+  min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;
 }
-
-header{
-  position:sticky;top:0;z-index:100;
-  background:rgba(4,19,13,0.85);
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
-  border-bottom:1px solid var(--glass-border);
-  padding:14px 24px;
-  display:flex;justify-content:space-between;align-items:center;
-  gap:16px;flex-wrap:wrap;
-}
-.header-brand{display:flex;align-items:center;gap:12px}
-.logo-img{
-  height:42px;border-radius:10px;
-  background:rgba(255,255,255,0.95);padding:3px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.3);
-}
-.header-title{
-  font-family:'Plus Jakarta Sans';font-weight:800;font-size:18px;
-  letter-spacing:-0.3px;
-  background:linear-gradient(135deg,#fff,var(--green-glow));
-  -webkit-background-clip:text;background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-.header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.live-pill{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:8px 14px;border-radius:99px;
-  background:rgba(25,195,125,0.12);
-  border:1px solid rgba(25,195,125,0.3);
-  font-size:12px;font-weight:600;color:var(--green-glow);
-}
-.live-dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--green-glow);
-  box-shadow:0 0 10px var(--green-glow);
-  animation:pulse 1.8s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100%{transform:scale(1);opacity:1}
-  50%{transform:scale(1.3);opacity:0.7}
-}
-.header-link{
-  color:var(--gold-soft);text-decoration:none;font-weight:600;font-size:13px;
-  transition:color 0.2s;
-}
-.header-link:hover{color:var(--gold)}
-.logout-btn{
-  color:var(--text-bright);background:var(--glass);
-  border:1px solid var(--glass-border);
-  padding:8px 16px;border-radius:10px;cursor:pointer;
-  font-family:inherit;font-size:13px;font-weight:600;
-  transition:all 0.2s;
-}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:rgba(4,19,13,0.92);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-right:1px solid var(--glass-border);padding:20px 14px;display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform 0.3s ease}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:3px}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 8px 18px;border-bottom:1px solid var(--glass-border);margin-bottom:18px}
+.logo-img{height:38px;border-radius:9px;background:rgba(255,255,255,0.95);padding:2px;box-shadow:0 4px 10px rgba(0,0,0,0.3);flex-shrink:0}
+.brand-text{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.brand-title{font-family:'Plus Jakarta Sans';font-weight:800;font-size:15px;letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-sub{font-size:10px;color:var(--text-soft);text-transform:uppercase;letter-spacing:1.2px}
+.nav-section{margin-bottom:18px}
+.nav-section-title{font-size:10px;color:var(--text-mute);text-transform:uppercase;letter-spacing:1.8px;font-weight:700;padding:0 10px 8px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--text-soft);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:all 0.2s;margin-bottom:2px;position:relative}
+.nav-item:hover{background:var(--glass);color:var(--text-bright)}
+.nav-item.active{background:linear-gradient(90deg,rgba(25,195,125,0.18),rgba(25,195,125,0.05));color:var(--green-glow);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:var(--green-glow);border-radius:0 3px 3px 0}
+.nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-badge{margin-left:auto;padding:2px 8px;border-radius:99px;background:rgba(255,90,110,0.18);color:var(--red-soft);font-size:10px;font-weight:700}
+.sidebar-footer{margin-top:auto;padding:14px 10px 4px;border-top:1px solid var(--glass-border)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--glass)}
+.user-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gold-soft));display:flex;align-items:center;justify-content:center;color:#04130d;font-weight:700;font-size:14px;flex-shrink:0}
+.user-info{font-size:12px;line-height:1.3;min-width:0;flex:1}
+.user-name{font-weight:600;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{color:var(--gold-soft);font-size:10px;text-transform:uppercase;letter-spacing:0.8px}
+.main{margin-left:var(--sidebar-w);padding:24px 28px 60px;min-height:100vh}
+@media (max-width:980px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:80px 16px 40px}}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.menu-toggle{display:none;width:42px;height:42px;border-radius:11px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text-bright);font-size:20px;cursor:pointer;align-items:center;justify-content:center}
+@media (max-width:980px){.menu-toggle{display:flex}}
+.page-title{font-family:'Plus Jakarta Sans';font-weight:800;font-size:24px;letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--text-soft);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;background:rgba(25,195,125,0.12);border:1px solid rgba(25,195,125,0.3);font-size:12px;font-weight:600;color:var(--green-glow)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green-glow);box-shadow:0 0 10px var(--green-glow);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.7}}
+.logout-btn{color:var(--text-bright);background:var(--glass);border:1px solid var(--glass-border);padding:9px 16px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .logout-btn:hover{background:var(--red-alert);border-color:var(--red-alert);color:#fff}
-
-.container{
-  max-width:1400px;margin:30px auto;padding:0 20px;
-  display:flex;gap:24px;flex-wrap:wrap;flex:1;width:100%;
-}
-
-.card{
-  background:var(--glass);
-  backdrop-filter:blur(20px);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius);
-  padding:24px;margin-bottom:20px;width:100%;
-  position:relative;overflow:hidden;
-  transition:border-color 0.3s;
-}
-.card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--green-glow),transparent);
-}
-.card h2{
-  font-family:'Plus Jakarta Sans';font-weight:700;font-size:18px;
-  letter-spacing:-0.3px;margin-bottom:12px;color:var(--text-bright);
-}
-.card h3{
-  font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;
-  color:var(--text-soft);margin-bottom:10px;
-}
+.section{display:none;animation:slideIn 0.3s ease}
+.section.active{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:24px;margin-bottom:20px;width:100%;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green-glow),transparent)}
+.card h2{font-family:'Plus Jakarta Sans';font-weight:700;font-size:18px;letter-spacing:-0.3px;margin-bottom:12px;color:var(--text-bright);display:flex;align-items:center;gap:10px}
+.card h3{font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;color:var(--text-soft);margin-bottom:10px}
 .card p{color:var(--text-soft);font-size:13px;line-height:1.5}
 .card strong{color:var(--green-glow);font-weight:700}
-
-label.field-label{
-  display:block;font-size:11px;color:var(--text-soft);
-  text-transform:uppercase;letter-spacing:1.3px;font-weight:600;
-  margin-bottom:6px;
-}
-input[type="text"], input[type="password"], input[type="file"], select{
-  width:100%;padding:11px 14px;margin-bottom:14px;
-  background:rgba(0,0,0,0.25);
-  border:1px solid var(--glass-border);border-radius:10px;
-  color:var(--text-bright);font-size:13px;font-family:inherit;
-  outline:none;box-sizing:border-box;
-  transition:all 0.2s;
-}
+label.field-label{display:block;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:1.3px;font-weight:600;margin-bottom:6px}
+input[type="text"],input[type="password"],input[type="file"],select{width:100%;padding:11px 14px;margin-bottom:14px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-bright);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;transition:all 0.2s}
 input::placeholder{color:var(--text-mute)}
-input:focus, select:focus{
-  border-color:var(--green-primary);
-  box-shadow:0 0 0 3px rgba(25,195,125,0.10);
-  background:rgba(0,0,0,0.4);
-}
+input:focus,select:focus{border-color:var(--green-primary);box-shadow:0 0 0 3px rgba(25,195,125,0.10);background:rgba(0,0,0,0.4)}
 input[type="file"]{padding:9px 12px;cursor:pointer}
-input[type="file"]::file-selector-button{
-  background:var(--green-deep);color:#fff;border:none;
-  padding:7px 14px;border-radius:7px;cursor:pointer;
-  font-family:inherit;font-size:12px;font-weight:600;
-  margin-right:10px;
-}
-select{
-  appearance:none;-webkit-appearance:none;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2319c37d' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat:no-repeat;background-position:right 12px center;
-  padding-right:34px;cursor:pointer;
-}
+input[type="file"]::file-selector-button{background:var(--green-deep);color:#fff;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;margin-right:10px}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2319c37d' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;cursor:pointer}
 select option{background:#0a2a1e;color:var(--text-bright)}
-
-.btn{
-  background:linear-gradient(135deg,var(--green-primary),var(--green-deep));
-  color:#04130d;border:none;padding:12px 18px;border-radius:10px;
-  cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans';font-size:13px;
-  width:100%;transition:all 0.25s;
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  box-shadow:0 4px 14px rgba(25,195,125,0.25);
-}
+.btn{background:linear-gradient(135deg,var(--green-primary),var(--green-deep));color:#04130d;border:none;padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans';font-size:13px;width:100%;transition:all 0.25s;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(25,195,125,0.25)}
 .btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(25,195,125,0.4)}
-.btn:active{transform:translateY(0)}
-.btn-red{
-  background:linear-gradient(135deg,var(--red-alert),#cc3046);
-  color:#fff;box-shadow:0 4px 14px rgba(255,90,110,0.25);
-}
-.btn-red:hover{box-shadow:0 8px 22px rgba(255,90,110,0.4)}
-.btn-gold{
-  background:linear-gradient(135deg,var(--gold),var(--gold-soft));
-  color:#04130d;box-shadow:0 4px 14px rgba(244,183,64,0.25);
-}
-.btn-gold:hover{box-shadow:0 8px 22px rgba(244,183,64,0.4)}
-.btn-ghost{
-  background:var(--glass-strong);color:var(--text-bright);
-  border:1px solid var(--glass-border);box-shadow:none;
-}
+.btn-red{background:linear-gradient(135deg,var(--red-alert),#cc3046);color:#fff;box-shadow:0 4px 14px rgba(255,90,110,0.25)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:#04130d;box-shadow:0 4px 14px rgba(244,183,64,0.25)}
+.btn-ghost{background:var(--glass-strong);color:var(--text-bright);border:1px solid var(--glass-border);box-shadow:none}
 .btn-ghost:hover{background:rgba(255,255,255,0.14)}
-
-.pair-uploader{
-  background:rgba(0,0,0,0.2);
-  border:1px solid var(--glass-border);
-  padding:14px;border-radius:10px;margin-bottom:12px;
-}
-.pair-uploader h4{
-  font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;
-  color:var(--green-glow);margin-bottom:8px;
-}
-
+.pair-uploader{background:rgba(0,0,0,0.2);border:1px solid var(--glass-border);padding:14px;border-radius:10px;margin-bottom:12px}
+.pair-uploader h4{font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:var(--green-glow);margin-bottom:8px}
 table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
-th{
-  background:rgba(0,0,0,0.3);
-  padding:12px 14px;text-align:left;
-  font-size:11px;text-transform:uppercase;letter-spacing:1.2px;
-  color:var(--text-soft);font-weight:700;
-  border-bottom:1px solid var(--glass-border);
-}
-td{
-  padding:12px 14px;border-bottom:1px solid var(--glass-border);
-  color:var(--text-bright);
-}
+th{background:rgba(0,0,0,0.3);padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-soft);font-weight:700;border-bottom:1px solid var(--glass-border)}
+td{padding:12px 14px;border-bottom:1px solid var(--glass-border);color:var(--text-bright)}
 tr:hover td{background:rgba(255,255,255,0.03)}
 tr:last-child td{border-bottom:none}
-
 .user-form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.user-form-row input, .user-form-row select{flex:1;min-width:150px;margin-bottom:0}
-
+.user-form-row input,.user-form-row select{flex:1;min-width:150px;margin-bottom:0}
 .analytics-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
-.stat-box{
-  flex:1;min-width:140px;
-  background:rgba(0,0,0,0.25);
-  border:1px solid var(--glass-border);
-  border-radius:12px;padding:18px;text-align:center;
-  position:relative;overflow:hidden;
-  transition:all 0.3s;
-}
+.stat-box{flex:1;min-width:140px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:12px;padding:18px;text-align:center;position:relative;overflow:hidden;transition:all 0.3s}
 .stat-box:hover{border-color:rgba(25,195,125,0.3);transform:translateY(-3px)}
-.stat-box::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--green-glow),transparent);
-}
-.stat-box h3{
-  font-family:'Plus Jakarta Sans';font-weight:800;font-size:24px;
-  color:var(--green-glow);margin-bottom:4px;
-  letter-spacing:-0.5px;
-}
-.stat-box p{margin:0;color:var(--text-soft);font-size:11px;
-  text-transform:uppercase;letter-spacing:1.2px;font-weight:600;}
-
+.stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green-glow),transparent)}
+.stat-box h3{font-family:'Plus Jakarta Sans';font-weight:800;font-size:24px;color:var(--green-glow);margin-bottom:4px;letter-spacing:-0.5px}
+.stat-box p{margin:0;color:var(--text-soft);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
 .chart-container{height:300px;width:100%;position:relative}
-
-.non-compliant-card{
-  border:1px solid rgba(255,90,110,0.4) !important;
-  background:rgba(255,90,110,0.04) !important;
-}
-.non-compliant-card::before{
-  background:linear-gradient(90deg,transparent,var(--red-alert),transparent) !important;
-}
+.non-compliant-card{border:1px solid rgba(255,90,110,0.4) !important;background:rgba(255,90,110,0.04) !important}
+.non-compliant-card::before{background:linear-gradient(90deg,transparent,var(--red-alert),transparent) !important}
 .non-compliant-card h2{color:var(--red-alert)}
 .non-compliant-table th{color:var(--red-soft)}
-
-#msg, #archiveMsg, #userMsg, #msg{
-  font-size:13px;margin-top:12px;text-align:center;
-  padding:10px 14px;border-radius:10px;
-  display:none;align-items:center;justify-content:center;gap:8px;
-}
-#msg.show, #archiveMsg.show, #userMsg.show{display:flex}
-
-footer{
-  margin-top:auto;padding:30px 24px;text-align:center;
-  border-top:1px solid var(--glass-border);
-  font-size:13px;color:var(--text-soft);
-}
-footer strong{color:var(--gold-soft);font-weight:700}
-footer b{color:var(--green-glow);font-weight:700}
-
+.archive-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.archive-tile{background:rgba(0,0,0,0.2);border:1px solid var(--glass-border);border-radius:14px;padding:20px}
+.archive-tile h3{font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;margin-bottom:8px;color:var(--text-bright)}
+#msg,#archiveMsg,#userMsg{font-size:13px;margin-top:12px;text-align:center;padding:10px 14px;border-radius:10px}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:var(--bg-deep)}
 ::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:5px}
 ::-webkit-scrollbar-thumb:hover{background:var(--green-primary)}
-
-@media (max-width:780px){
-  header{padding:12px 16px}
-  .header-title{font-size:15px}
-  .container{padding:0 12px}
-  .card{padding:18px}
-  .analytics-row{flex-direction:column}
-}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-brand">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
     <img src="/images/kp-logo.png" class="logo-img" alt="KP">
     <img src="/images/dglg-logo.png" class="logo-img" alt="DGLG">
-    <span class="header-title">Dashboard Panel</span>
-    <span class="live-pill"><span class="live-dot"></span> LIVE</span>
+    <div class="brand-text">
+      <span class="brand-title">Pak Saaf</span>
+      <span class="brand-sub">Dashboard</span>
+    </div>
   </div>
-  <div class="header-actions">
-    <a href="/index.html" class="header-link">🖼 View Gallery →</a>
-    <button onclick="logout()" class="logout-btn">🚪 Logout</button>
+  <div class="nav-section">
+    <div class="nav-section-title">Monitoring</div>
+    <a class="nav-item active" data-section="upload"><span class="nav-icon">📤</span> Upload Images</a>
+    <a class="nav-item" data-section="analytics"><span class="nav-icon">📊</span> Compliance Analytics</a>
+    <a class="nav-item" data-section="images"><span class="nav-icon">🖼️</span> Image Management</a>
+    <a class="nav-item" data-section="noncompliant" id="navNonCompliant" style="display:none"><span class="nav-icon">⚠️</span> Zero Compliance <span class="nav-badge" id="nonCompliantBadge">0</span></a>
   </div>
-</header>
-
-<div class="container">
-
-  <!-- ============ UPLOAD IMAGES ============ -->
-  <div style="flex:1;min-width:300px;max-width:450px">
-    <div class="card">
-      <h2>📤 Upload Images</h2>
-      <p>Logged in as: <strong id="distName"></strong></p>
-      <div id="adminSelects" style="display:none">
-        <label class="field-label">District</label>
-        <select id="distSelect" onchange="updateTehsils()"></select>
-        <label class="field-label">Tehsil</label>
-        <select id="tehsilSelect" onchange="updateVCs()"></select>
-        <label class="field-label">Village Council</label>
-        <select id="vcSelect"></select>
+  <div class="nav-section">
+    <div class="nav-section-title">Administration</div>
+    <a class="nav-item" data-section="users" id="navUsers" style="display:none"><span class="nav-icon">👥</span> User Management</a>
+    <a class="nav-item" data-section="archive" id="navArchive" style="display:none"><span class="nav-icon">🗄️</span> Data Archive</a>
+    <a class="nav-item" data-section="storage" id="navStorage" style="display:none"><span class="nav-icon">☁️</span> Cloud Storage</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Account</div>
+    <a class="nav-item" href="/index.html"><span class="nav-icon">🖼️</span> View Gallery</a>
+    <a class="nav-item" onclick="logout()" style="color:var(--red-soft)"><span class="nav-icon">🚪</span> Logout</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="userAvatar">DG</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading…</div>
+        <div class="user-role" id="userRole">Loading…</div>
       </div>
-      <label class="field-label">Date</label>
-      <select id="date" required></select>
-      <div id="pairUploaders"></div>
-      <button class="btn" onclick="uploadImages()">☁️ Upload to Cloud</button>
-      <p id="msg" style="font-size:13px;text-align:center;margin-top:15px"></p>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div>
+        <div class="page-title" id="pageTitle">Upload Images</div>
+        <div class="page-sub" id="pageSub">Upload before/after image pairs for your Village Council</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="live-pill"><span class="live-dot"></span> LIVE</span>
+      <button onclick="logout()" class="logout-btn">🚪 Logout</button>
     </div>
   </div>
 
-  <!-- ============ ANALYTICS + GALLERY + STORAGE ============ -->
-  <div style="flex:2;min-width:300px">
+  <div class="section active" id="section-upload">
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <div style="flex:1;min-width:300px;max-width:450px">
+        <div class="card">
+          <h2>📤 Upload Images</h2>
+          <p>Logged in as: <strong id="distName"></strong></p>
+          <div id="adminSelects" style="display:none">
+            <label class="field-label">District</label>
+            <select id="distSelect" onchange="updateTehsils()"></select>
+            <label class="field-label">Tehsil</label>
+            <select id="tehsilSelect" onchange="updateVCs()"></select>
+            <label class="field-label">Village Council</label>
+            <select id="vcSelect"></select>
+          </div>
+          <label class="field-label">Date</label>
+          <select id="date" required></select>
+          <div id="pairUploaders"></div>
+          <button class="btn" onclick="uploadImages()">☁️ Upload to Cloud</button>
+          <p id="msg" style="font-size:13px;text-align:center;margin-top:15px"></p>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px">
+        <div class="card">
+          <h2>📋 Quick Info</h2>
+          <p style="margin-bottom:14px">Upload <strong>before/after image pairs</strong> for cleanliness activities in your Village Council.</p>
+          <p style="margin-bottom:14px">📌 <strong>4 pairs per day</strong> maximum (8 images total)</p>
+          <p style="margin-bottom:14px">🖼️ Images are <strong>auto-compressed</strong> to ~140KB before upload</p>
+          <p style="margin-bottom:14px">📱 <strong>Offline mode</strong>: uploads saved locally if no internet, auto-sync when online</p>
+          <p style="margin-bottom:14px">📅 Dates use <strong>PKT timezone</strong> (UTC+5), Sundays skipped</p>
+          <p>⏰ <strong>6-day rolling window</strong>: images older than 6 days auto-deleted</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="section" id="section-analytics">
     <div class="card">
       <h2>📊 Live Compliance Analytics</h2>
-
       <div id="analyticsFilters" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center;">
         <input type="text" id="a_vc_search" list="vclist" placeholder="Search VC to filter analytics (leave empty for Global)..." style="flex:2;min-width:200px;margin-bottom:0;padding:11px 14px;border:1px solid var(--glass-border);border-radius:10px;background:rgba(0,0,0,0.25);color:var(--text-bright);font-size:13px;box-sizing:border-box">
         <button class="btn" style="width:auto;padding:11px 20px;margin-bottom:0;" onclick="loadAnalytics()">🔍 Filter Analytics</button>
       </div>
-
-      <div class="analytics-row" id="analyticsRow">
+      <div class="analytics-row">
         <div class="stat-box"><h3 id="statTotalVcs">0</h3><p>Total VCs</p></div>
         <div class="stat-box"><h3 id="statUploadedToday">0</h3><p>Uploaded Today</p></div>
         <div class="stat-box"><h3 id="statUploaded6Days">0</h3><p>Uploaded (6 Days)</p></div>
       </div>
       <div class="chart-container"><canvas id="districtChart"></canvas></div>
     </div>
+  </div>
 
+  <div class="section" id="section-images">
     <div class="card">
       <h2>🖼️ Manage Images</h2>
       <p id="officerVcName" style="display:none;color:var(--text-soft);font-size:13px;margin-bottom:15px;">Your Village Council: <strong></strong></p>
@@ -354,443 +241,164 @@ footer b{color:var(--green-glow);font-weight:700}
       </div>
       <div id="adminGallery"></div>
     </div>
-
   </div>
 
-  <!-- ============ CLOUDINARY STORAGE ============ -->
-  <div class="card" id="cloudinaryCard" style="display:none">
-    <h2>☁️ Cloud Storage Status</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:30px;align-items:center;justify-content:center;">
-      <div style="flex:1;min-width:250px;max-width:300px;">
-        <h3 style="text-align:center;margin-bottom:10px;">Storage Usage</h3>
-        <div style="height:200px;"><canvas id="storageChart"></canvas></div>
-        <p id="storageText" style="text-align:center;margin-top:10px;font-weight:600;color:var(--green-glow);font-size:13px;"></p>
+  <div class="section" id="section-noncompliant">
+    <div class="card non-compliant-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;margin-bottom:15px;">
+        <h2 style="margin:0;color:var(--red-alert);" id="nonCompliantTitle">🚨 Zero Compliance Alert</h2>
+        <select id="nonCompliantDateSelect" onchange="loadNonCompliant()" style="width:auto;margin:0;padding:8px 14px;border:1px solid var(--red-alert);border-radius:8px;background:rgba(255,90,110,0.1);color:var(--red-alert);font-weight:600;"></select>
       </div>
-      <div style="flex:1;min-width:250px;max-width:300px;">
-        <h3 style="text-align:center;margin-bottom:10px;">Monthly Bandwidth</h3>
-        <div style="height:200px;"><canvas id="bandwidthChart"></canvas></div>
-        <p id="bandwidthText" style="text-align:center;margin-top:10px;font-weight:600;color:var(--gold-soft);font-size:13px;"></p>
+      <p style="color:var(--text-soft);font-size:13px;margin-bottom:15px;">The following VCs have NOT completed their 4 pairs for the selected date.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
+        <h3 id="nonCompliantCount" style="margin:0;font-size:16px;color:var(--text-bright);">Total: 0 VCs</h3>
+        <button class="btn-red" style="width:auto;padding:9px 16px;font-size:12px;" onclick="downloadNonCompliantCSV()">⬇ Export Slackers CSV</button>
+      </div>
+      <div style="max-height:400px;overflow-y:auto;border:1px solid var(--glass-border);border-radius:10px;">
+        <table class="non-compliant-table"><thead><tr><th>District</th><th>Tehsil</th><th>Village Council</th><th>Officer</th></tr></thead><tbody id="nonCompliantBody"></tbody></table>
       </div>
     </div>
   </div>
 
-  <!-- ============ ZERO COMPLIANCE ============ -->
-  <div class="card non-compliant-card" id="nonCompliantCard" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;margin-bottom:15px;">
-      <h2 style="margin:0;color:var(--red-alert);" id="nonCompliantTitle">🚨 Zero Compliance Alert</h2>
-      <select id="nonCompliantDateSelect" onchange="loadNonCompliant()" style="width:auto;margin:0;padding:8px 14px;border:1px solid var(--red-alert);border-radius:8px;background:rgba(255,90,110,0.1);color:var(--red-alert);font-weight:600;appearance:none;-webkit-appearance:none;padding-right:32px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23ff5a6e%22 stroke-width=%223%22><polyline points=%226 9 12 15 18 9%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;"></select>
-    </div>
-    <p style="color:var(--text-soft);font-size:13px;margin-bottom:15px;">The following VCs have NOT completed their 4 pairs for the selected date.</p>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
-      <h3 id="nonCompliantCount" style="margin:0;font-size:16px;color:var(--text-bright);">Total: 0 VCs</h3>
-      <button class="btn-red" style="width:auto;padding:9px 16px;font-size:12px;" onclick="downloadNonCompliantCSV()">⬇ Export Slackers CSV</button>
-    </div>
-    <div style="max-height:400px;overflow-y:auto;border:1px solid var(--glass-border);border-radius:10px;">
-      <table class="non-compliant-table"><thead><tr><th>District</th><th>Tehsil</th><th>Village Council</th><th>Officer</th></tr></thead><tbody id="nonCompliantBody"></tbody></table>
-    </div>
-  </div>
-
-  <!-- ============ ARCHIVE CENTER ============ -->
-  <div class="card" id="archiveCard" style="display:none">
-    <h2>🗄️ Data Archive Center (Admin Only)</h2>
-    <p style="color:var(--text-soft);font-size:13px;margin-bottom:20px;line-height:1.6;">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them.<br><strong style="color:var(--red-alert);">Note:</strong> PDFs are limited to 50 images per file to prevent server timeouts. For bulk downloads, use ZIP.</p>
-
-    <h3 style="margin-bottom:10px;">1. Tehsil-wise PDF Report</h3>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="flex:1;margin-bottom:0;min-width:150px;"></select>
-      <select id="pdfTehsilSelect" style="flex:1;margin-bottom:0;min-width:150px;"></select>
-      <button class="btn-gold" style="width:auto;padding:11px 20px;" onclick="downloadPDF()">📄 Download</button>
-    </div>
-
-    <h3 style="margin-bottom:10px;">2. District-wise PDF Report</h3>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <select id="pdfDistOnlySelect" style="flex:1;margin-bottom:0;min-width:150px;"></select>
-      <button class="btn-gold" style="width:auto;padding:11px 20px;" onclick="downloadDistrictPDF()">📄 Download District PDF</button>
-    </div>
-
-    <h3 style="margin-bottom:10px;">3. Overall Provincial PDF Report</h3>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <button class="btn-gold" style="width:auto;padding:11px 20px;" onclick="downloadOverallPDF()">📄 Download Overall PDF</button>
-    </div>
-
-    <h3 style="margin-bottom:10px;">4. ZIP Archive (District-wise)</h3>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <select id="zipDistSelect" style="flex:1;margin-bottom:0;min-width:150px;"></select>
-      <button class="btn" style="width:auto;padding:11px 20px;" onclick="downloadZip()">⬇ Download ZIP</button>
-    </div>
-
-    <h3 style="margin-bottom:10px;">5. Overall Provincial ZIP Archive</h3>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <button class="btn" style="width:auto;padding:11px 20px;" onclick="downloadOverallZip()">⬇ Download Overall ZIP</button>
-    </div>
-
-    <p id="archiveMsg" style="font-size:13px;margin-top:15px;text-align:center;"></p>
-  </div>
-
-  <!-- ============ USER MANAGEMENT ============ -->
-  <div class="card" id="userMgmtCard" style="display:none">
-    <h2>👤 User Management (Admin Only)</h2>
-    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-      <button class="btn" style="width:auto;" onclick="generateAccounts()">⚡ Generate All VC Accounts</button>
-      <button class="btn-gold" style="width:auto;" onclick="downloadCSV()">⬇ Download Accounts CSV</button>
-    </div>
-
-    <h3 style="margin-bottom:10px;">Manual Add User (Assign to VC)</h3>
-    <div class="user-form-row">
-      <input type="text" id="newUsername" placeholder="Username (e.g., pes_custom_1)">
-      <input type="password" id="newPassword" placeholder="Temp Password (Leave blank for 12345)">
-    </div>
-    <div class="user-form-row" style="margin-bottom:15px;">
-      <select id="newDistSelect" onchange="updateNewTehsils()" style="flex:1;min-width:150px;margin-bottom:0;"></select>
-      <select id="newTehsilSelect" onchange="updateNewVCs()" style="flex:1;min-width:150px;margin-bottom:0;"></select>
-      <select id="newVcSelect" style="flex:1;min-width:150px;margin-bottom:0;"></select>
-    </div>
-    <button class="btn" style="width:auto;padding:11px 20px;margin-bottom:15px;" onclick="createUser()">➕ Add User</button>
-    <p id="userMsg" style="font-size:13px;margin-bottom:15px;"></p>
-
-    <div style="display:flex;gap:15px;margin-bottom:15px;align-items:center;flex-wrap:wrap;">
-      <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:0;flex:2;min-width:200px;">
-      <select id="userDateFilter" onchange="currentUserPage=1; loadUsers()" style="margin-bottom:0;flex:1;min-width:150px;">
-        <option value="">All Dates (Accounts)</option>
-      </select>
-    </div>
-
-    <div style="overflow-x:auto;border:1px solid var(--glass-border);border-radius:10px;">
-      <table>
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>District / Tehsil / VC</th>
-            <th id="statusHeader" style="display:none;">Status (Pairs)</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="userTableBody"></tbody>
-      </table>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:10px;">
-      <button id="prevPageBtn" class="btn btn-ghost" style="width:auto;padding:8px 16px;" onclick="currentUserPage--; loadUsers()">← Previous</button>
-      <span id="paginationInfo" style="font-size:13px;color:var(--text-soft);"></span>
-      <button id="nextPageBtn" class="btn btn-ghost" style="width:auto;padding:8px 16px;" onclick="currentUserPage++; loadUsers()">Next →</button>
+  <div class="section" id="section-storage">
+    <div class="card">
+      <h2>☁️ Cloud Storage Status</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:30px;align-items:center;justify-content:center;">
+        <div style="flex:1;min-width:250px;max-width:300px;">
+          <h3 style="text-align:center;margin-bottom:10px;">Storage Usage</h3>
+          <div style="height:200px;"><canvas id="storageChart"></canvas></div>
+          <p id="storageText" style="text-align:center;margin-top:10px;font-weight:600;color:var(--green-glow);font-size:13px;"></p>
+        </div>
+        <div style="flex:1;min-width:250px;max-width:300px;">
+          <h3 style="text-align:center;margin-bottom:10px;">Monthly Bandwidth</h3>
+          <div style="height:200px;"><canvas id="bandwidthChart"></canvas></div>
+          <p id="bandwidthText" style="text-align:center;margin-top:10px;font-weight:600;color:var(--gold-soft);font-size:13px;"></p>
+        </div>
+      </div>
     </div>
   </div>
 
-</div>
+  <div class="section" id="section-archive">
+    <div class="card">
+      <h2>🗄️ Data Archive Center</h2>
+      <p style="color:var(--text-soft);font-size:13px;margin-bottom:20px;line-height:1.6;">Download permanent PDF Reports or ZIP Archives of the images before the 6-day auto-deletion removes them.<br><strong style="color:var(--red-alert);">Note:</strong> PDFs are limited to 50 images per file to prevent server timeouts. For bulk downloads, use ZIP.</p>
+      <div class="archive-grid">
+        <div class="archive-tile">
+          <h3>1. Tehsil-wise PDF</h3>
+          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Single tehsil report, max 50 images.</p>
+          <select id="pdfDistSelect" onchange="updatePdfTehsils()" style="margin-bottom:8px"></select>
+          <select id="pdfTehsilSelect" style="margin-bottom:10px"></select>
+          <button class="btn-gold" style="width:100%" onclick="downloadPDF()">📄 Download PDF</button>
+        </div>
+        <div class="archive-tile">
+          <h3>2. District-wise PDF</h3>
+          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All tehsils in a district, max 50 images.</p>
+          <select id="pdfDistOnlySelect" style="margin-bottom:10px"></select>
+          <button class="btn-gold" style="width:100%" onclick="downloadDistrictPDF()">📄 Download PDF</button>
+        </div>
+        <div class="archive-tile">
+          <h3>3. Overall Provincial PDF</h3>
+          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts summary, max 50 images.</p>
+          <button class="btn-gold" style="width:100%" onclick="downloadOverallPDF()">📄 Download PDF</button>
+        </div>
+        <div class="archive-tile">
+          <h3>4. District ZIP Archive</h3>
+          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">Full-resolution images, organized by folders. No limit.</p>
+          <select id="zipDistSelect" style="margin-bottom:10px"></select>
+          <button class="btn" style="width:100%" onclick="downloadZip()">⬇ Download ZIP</button>
+        </div>
+        <div class="archive-tile">
+          <h3>5. Overall Provincial ZIP</h3>
+          <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">All 38 districts in one ZIP. No image limit. May take several minutes.</p>
+          <button class="btn" style="width:100%" onclick="downloadOverallZip()">⬇ Download ZIP</button>
+        </div>
+      </div>
+      <p id="archiveMsg" style="font-size:13px;margin-top:20px;text-align:center;"></p>
+    </div>
+  </div>
 
-<footer>
-  <div><strong>Pak Saaf Image Gallery</strong> · Directorate General, Local Government &amp; Rural Development Department, Khyber Pakhtunkhwa</div>
-  <div style="margin-top:8px;">Developed &amp; Managed by: <b>@Engr. Shaleem Khokhar</b> | Contact # 0300-5988832</div>
-</footer>
+  <div class="section" id="section-users">
+    <div class="card">
+      <h2>👤 User Management</h2>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="btn" style="width:auto;" onclick="generateAccounts()">⚡ Generate All VC Accounts</button>
+        <button class="btn-gold" style="width:auto;" onclick="downloadCSV()">⬇ Download Accounts CSV</button>
+      </div>
+      <h3 style="margin-bottom:10px;">Manual Add User (Assign to VC)</h3>
+      <div class="user-form-row">
+        <input type="text" id="newUsername" placeholder="Username (e.g., pes_custom_1)">
+        <input type="password" id="newPassword" placeholder="Temp Password (Leave blank for 12345)">
+      </div>
+      <div class="user-form-row" style="margin-bottom:15px;">
+        <select id="newDistSelect" onchange="updateNewTehsils()" style="flex:1;min-width:150px;margin-bottom:0;"></select>
+        <select id="newTehsilSelect" onchange="updateNewVCs()" style="flex:1;min-width:150px;margin-bottom:0;"></select>
+        <select id="newVcSelect" style="flex:1;min-width:150px;margin-bottom:0;"></select>
+      </div>
+      <button class="btn" style="width:auto;padding:11px 20px;margin-bottom:15px;" onclick="createUser()">➕ Add User</button>
+      <p id="userMsg" style="font-size:13px;margin-bottom:15px;"></p>
+      <div style="display:flex;gap:15px;margin-bottom:15px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="userSearch" placeholder="Search Username or VC..." onkeyup="currentUserPage=1; loadUsers()" style="margin-bottom:0;flex:2;min-width:200px;">
+        <select id="userDateFilter" onchange="currentUserPage=1; loadUsers()" style="margin-bottom:0;flex:1;min-width:150px;">
+          <option value="">All Dates (Accounts)</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;border:1px solid var(--glass-border);border-radius:10px;">
+        <table>
+          <thead><tr><th>Username</th><th>District / Tehsil / VC</th><th id="statusHeader" style="display:none;">Status (Pairs)</th><th>Action</th></tr></thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:10px;">
+        <button id="prevPageBtn" class="btn btn-ghost" style="width:auto;padding:8px 16px;" onclick="currentUserPage--; loadUsers()">← Previous</button>
+        <span id="paginationInfo" style="font-size:13px;color:var(--text-soft);"></span>
+        <button id="nextPageBtn" class="btn btn-ghost" style="width:auto;padding:8px 16px;" onclick="currentUserPage++; loadUsers()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+</main>
 
 <script>
-/* =====================================================
-   EXACT SAME LOGIC AS YOUR ORIGINAL — UNCHANGED
-   All API calls preserved:
-   - /api/upload (POST, FormData, image compression)
-   - /api/hierarchy (GET)
-   - /api/images (GET)
-   - /api/stats/compliance (GET, optional vcId)
-   - /api/stats/noncompliant (GET, date param)
-   - /api/cloudinary/usage (GET)
-   - /api/users/paginated (GET, page/search/date)
-   - /api/users/reset/:id (POST)
-   - /api/users/:id (DELETE)
-   - /api/register (POST)
-   - /api/users/generate (POST)
-   - /api/users/csv (GET)
-   - /api/dateentry/:id (DELETE)
-   - /api/download/pdf/tehsil/:d/:t (GET)
-   - /api/download/pdf/district/:d (GET)
-   - /api/download/pdf/overall (GET)
-   - /api/download/zip/district/:d (GET)
-   - /api/download/zip/overall (GET)
-   - IndexedDB offline upload + sync
-   - Chart.js bar + 2 doughnuts
-   - Role-based UI (admin vs officer)
-   - PKT date calculation
-   ===================================================== */
-
-let hierarchy = {}, userRole = localStorage.getItem('role'), token = localStorage.getItem('token'), vcId = localStorage.getItem('vcId'), chartInstance = null;
-let currentUserPage = 1;
-let nonCompliantData = [];
-let storageChartInstance = null;
-let bandwidthChartInstance = null;
-
+let hierarchy={},userRole=localStorage.getItem('role'),token=localStorage.getItem('token'),vcId=localStorage.getItem('vcId'),chartInstance=null;
+let currentUserPage=1;let nonCompliantData=[];let storageChartInstance=null;let bandwidthChartInstance=null;
+let loadedSections={analytics:false,noncompliant:false,storage:false,users:false};
 let db;
-const request = indexedDB.open('pakSaafDB', 1);
-request.onupgradeneeded = (event) => {
-  db = event.target.result;
-  if (!db.objectStoreNames.contains('pendingUploads')) db.createObjectStore('pendingUploads', { keyPath: 'id', autoIncrement: true });
-};
-request.onsuccess = (event) => { db = event.target.result; if (navigator.onLine) syncPendingUploads(); };
-window.addEventListener('online', syncPendingUploads);
-
-function saveOfflineUpload(dataObj) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('pendingUploads', 'readwrite'); const store = tx.objectStore('pendingUploads');
-    const req = store.add(dataObj); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error);
-  });
-}
-async function syncPendingUploads() {
-  if (!db) return; const token = localStorage.getItem('token');
-  if (!token) { msg.innerText = '❌ Session expired. Please log in again to sync offline data.'; return; }
-  const tx = db.transaction('pendingUploads', 'readonly'); const store = tx.objectStore('pendingUploads');
-  const allReq = store.getAll();
-  allReq.onsuccess = async () => {
-    const pending = allReq.result;
-    if (pending.length > 0) {
-      msg.innerText = '🔄 Syncing offline uploads...';
-      for (const item of pending) {
-        const formData = new FormData(); formData.append('vcId', item.vcId); formData.append('date', item.date);
-        for(let i=1; i<=4; i++) { if(item[`pair${i}_before`]) formData.append(`pair${i}_before`, item[`pair${i}_before`]); if(item[`pair${i}_after`]) formData.append(`pair${i}_after`, item[`pair${i}_after`]); }
-        const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
-        if (res.status === 401 || res.status === 403) { msg.innerText = '❌ Session expired! Please log in again to sync.'; return; }
-      }
-      const clearTx = db.transaction('pendingUploads', 'readwrite'); clearTx.objectStore('pendingUploads').clear();
-      msg.innerText = '✅ Offline uploads synced successfully!'; loadGallery();
-    }
-  };
-}
-
-if (userRole === 'admin') {
-  document.getElementById('distName').innerText = "DGLG Main Admin";
-  document.getElementById('adminSelects').style.display = 'block';
-  document.getElementById('userMgmtCard').style.display = 'block';
-  document.getElementById('archiveCard').style.display = 'block';
-  document.getElementById('nonCompliantCard').style.display = 'block';
-  document.getElementById('cloudinaryCard').style.display = 'block';
-} else {
-  document.getElementById('distName').innerText = `${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;
-}
-function logout() { localStorage.clear(); window.location.href = '/login.html'; }
-function buildUploaders() { let html = ''; for(let i=1; i<=4; i++) html += `<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`; document.getElementById('pairUploaders').innerHTML = html; }
-
-function getPakistanDateString(date = new Date()) { const pkTime = new Date(date.getTime() + (5 * 60 * 60 * 1000)); const year = pkTime.getUTCFullYear(); const month = String(pkTime.getUTCMonth() + 1).padStart(2, '0'); const day = String(pkTime.getUTCDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
-function getRecentPakistanDates(count) { const dates = []; let daysAgo = 0; while(dates.length < count) { const d = new Date(); d.setDate(d.getDate() - daysAgo); const pkDate = new Date(d.getTime() + (5 * 60 * 60 * 1000)); if (pkDate.getUTCDay() !== 0) { dates.push(getPakistanDateString(d)); } daysAgo++; } return dates; }
-
-async function init() {
-  buildUploaders();
-  const recentDates = getRecentPakistanDates(6);
-  const dateOptionsHtml = recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
-  document.getElementById('date').innerHTML = dateOptionsHtml;
-  document.getElementById('g_date').innerHTML = '<option value="">All Dates</option>' + dateOptionsHtml;
-
-  const res = await fetch('/api/hierarchy'); const villages = await res.json();
-  villages.forEach(v => { if (!hierarchy[v.District]) hierarchy[v.District] = {}; if (!hierarchy[v.District][v.Tehsil]) hierarchy[v.District][v.Tehsil] = []; hierarchy[v.District][v.Tehsil].push(v); });
-
-  if (userRole === 'admin') {
-    let dHtml = '<option value="">Select District</option>';
-    Object.keys(hierarchy).forEach(d => dHtml += `<option>${d}</option>`);
-    document.getElementById('distSelect').innerHTML = dHtml; document.getElementById('newDistSelect').innerHTML = dHtml;
-    document.getElementById('pdfDistSelect').innerHTML = dHtml; document.getElementById('pdfDistOnlySelect').innerHTML = dHtml; document.getElementById('zipDistSelect').innerHTML = dHtml;
-    let vcListHtml = '';
-    Object.keys(hierarchy).forEach(d => { Object.keys(hierarchy[d]).forEach(t => { hierarchy[d][t].forEach(v => { vcListHtml += `<option value="${v['Village Councils']}">`; }); }); });
-    document.getElementById('vclist').innerHTML = vcListHtml;
-    let ncDateHtml = '<option value="overall">Overall (Last 6 Days)</option>';
-    ncDateHtml += recentDates.map(d => `<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</option>`).join('');
-    document.getElementById('nonCompliantDateSelect').innerHTML = ncDateHtml;
-    document.getElementById('userDateFilter').innerHTML = '<option value="">All Dates (Accounts)</option>' + dateOptionsHtml;
-    document.getElementById('galleryFilters').style.display = 'flex';
-    document.getElementById('analyticsFilters').style.display = 'flex';
-    loadNonCompliant();
-  } else {
-    document.getElementById('galleryFilters').style.display = 'flex';
-    document.getElementById('g_vc_search').style.display = 'none';
-    document.getElementById('officerVcName').style.display = 'block';
-    document.getElementById('officerVcName').querySelector('strong').innerText = localStorage.getItem('vcName');
-  }
-  loadAnalytics();
-  loadCloudinaryUsage();
-  document.getElementById('adminGallery').innerHTML = '<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please select a date and click Load Images to view data.</p>';
-  if(userRole === 'admin') loadUsers();
-}
-
-async function loadAnalytics() {
-  let url = '/api/stats/compliance';
-  if (userRole === 'admin') {
-    const searchName = document.getElementById('a_vc_search').value.toLowerCase();
-    if (searchName) {
-      let foundVc = null;
-      for (const d in hierarchy) {
-        for (const t in hierarchy[d]) {
-          foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName));
-          if (foundVc) break;
-        }
-        if (foundVc) break;
-      }
-      if (foundVc) { url += '?vcId=' + foundVc._id; }
-      else {
-        document.getElementById('statTotalVcs').innerText = '0';
-        document.getElementById('statUploadedToday').innerText = '0';
-        document.getElementById('statUploaded6Days').innerText = '0';
-        if(chartInstance) chartInstance.destroy();
-        alert('No Village Council found with that name.');
-        return;
-      }
-    }
-  }
-
-  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
-  const data = await res.json();
-  document.getElementById('statTotalVcs').innerText = data.totalVcs;
-  document.getElementById('statUploadedToday').innerText = data.uploadedTodayCount;
-  document.getElementById('statUploaded6Days').innerText = data.uploaded6DaysCount;
-  if(chartInstance) chartInstance.destroy();
-  const ctx = document.getElementById('districtChart').getContext('2d');
-
-  const dataLabelPlugin = {
-    id: 'dataLabelPlugin',
-    afterDatasetsDraw(chart) {
-      const { ctx } = chart; ctx.save(); ctx.font = '700 12px Inter, sans-serif'; ctx.fillStyle = '#2bff9a'; ctx.textAlign = 'center';
-      chart.data.datasets[0].data.forEach((value, index) => {
-        const meta = chart.getDatasetMeta(0); const bar = meta.data[index];
-        if (bar) ctx.fillText(value + '%', bar.x, bar.y - 8);
-      });
-      ctx.restore();
-    }
-  };
-
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: { labels: data.chartLabels, datasets: [{ label: 'Daily Compliance %', data: data.chartData, backgroundColor: '#19c37d', borderRadius: 6, borderSkipped: false }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 20 } },
-      plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(4,19,13,0.95)', titleColor: '#2bff9a', bodyColor: '#f3fff8', borderColor: '#19c37d', borderWidth: 1, callbacks: { label: function(context) { return context.raw + '% Compliance'; } } } },
-      scales: {
-        y: { beginAtZero: true, max: 100, ticks: { color: '#a7c4b6', callback: function(value) { return value + '%'; }, font: { family: 'Inter', size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        x: { ticks: { color: '#a7c4b6', font: { family: 'Inter', size: 11 } }, grid: { display: false } }
-      }
-    },
-    plugins: [dataLabelPlugin]
-  });
-}
-
-async function loadCloudinaryUsage() {
-  const res = await fetch('/api/cloudinary/usage', { headers: { 'Authorization': 'Bearer ' + token } });
-  if (!res.ok) return;
-  const data = await res.json();
-
-  if (storageChartInstance) storageChartInstance.destroy();
-  if (bandwidthChartInstance) bandwidthChartInstance.destroy();
-
-  const sCtx = document.getElementById('storageChart').getContext('2d');
-  const storageRemaining = data.storage.limit - data.storage.used;
-  document.getElementById('storageText').innerText = `${data.storage.used} MB / ${data.storage.limit} MB`;
-  storageChartInstance = new Chart(sCtx, {
-    type: 'doughnut',
-    data: { labels: ['Used', 'Remaining'], datasets: [{ data: [data.storage.used, storageRemaining > 0 ? storageRemaining : 0], backgroundColor: ['#ff5a6e', '#19c37d'], borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#a7c4b6', font: { family: 'Inter', size: 11 } } } } }
-  });
-
-  const bCtx = document.getElementById('bandwidthChart').getContext('2d');
-  const bandwidthRemaining = data.bandwidth.limit - data.bandwidth.used;
-  document.getElementById('bandwidthText').innerText = `${data.bandwidth.used} MB / ${data.bandwidth.limit} MB`;
-  bandwidthChartInstance = new Chart(bCtx, {
-    type: 'doughnut',
-    data: { labels: ['Used', 'Remaining'], datasets: [{ data: [data.bandwidth.used, bandwidthRemaining > 0 ? bandwidthRemaining : 0], backgroundColor: ['#f4b740', '#19c37d'], borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#a7c4b6', font: { family: 'Inter', size: 11 } } } } }
-  });
-}
-
-async function loadNonCompliant() {
-  const selectedDate = document.getElementById('nonCompliantDateSelect').value;
-  if (!selectedDate) return;
-  const res = await fetch(`/api/stats/noncompliant?date=${selectedDate}`, { headers: { 'Authorization': 'Bearer ' + token } });
-  const data = await res.json(); nonCompliantData = data.villages;
-  if (selectedDate === 'overall') document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Overall - Last 6 Days)`;
-  else { const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }); document.getElementById('nonCompliantTitle').innerText = `🚨 Zero Compliance Alert (Date: ${formattedDate})`; }
-  document.getElementById('nonCompliantCount').innerText = `Total: ${data.count} VCs`;
-  document.getElementById('nonCompliantBody').innerHTML = data.villages.map(v => `<tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');
-}
-function downloadNonCompliantCSV() { let csv = 'District,Tehsil,Village Council,Assigned Officer\n'; nonCompliantData.forEach(v => { csv += `${v.district},${v.tehsil},${v.vcName},${v.officer}\n`; }); const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Non_Compliant_VCs.csv'; document.body.appendChild(a); a.click(); a.remove(); }
-
-function updateTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[distSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('tehsilSelect').innerHTML = tHtml; document.getElementById('vcSelect').innerHTML = ''; }
-function updateVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[distSelect.value][tehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}">${v['Village Councils']}</option>`); document.getElementById('vcSelect').innerHTML = vHtml; }
-function updateNewTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[newDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('newTehsilSelect').innerHTML = tHtml; document.getElementById('newVcSelect').innerHTML = ''; }
-function updateNewVCs() { let vHtml = '<option value="">Select VC</option>'; (hierarchy[newDistSelect.value][newTehsilSelect.value] || []).forEach(v => vHtml += `<option value="${v._id}" data-name="${v['Village Councils']}">${v['Village Councils']}</option>`); document.getElementById('newVcSelect').innerHTML = vHtml; }
-function updatePdfTehsils() { let tHtml = '<option value="">Select Tehsil</option>'; Object.keys(hierarchy[pdfDistSelect.value] || {}).forEach(t => tHtml += `<option>${t}</option>`); document.getElementById('pdfTehsilSelect').innerHTML = tHtml; }
-
-async function loadGallery() {
-  let targetVcId = vcId;
-  if (userRole === 'admin') {
-    const searchName = document.getElementById('g_vc_search').value.toLowerCase();
-    if (!searchName) { document.getElementById('adminGallery').innerHTML = '<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please type a VC name and click Load Images.</p>'; return; }
-    let foundVc = null;
-    for (const d in hierarchy) { for (const t in hierarchy[d]) { foundVc = hierarchy[d][t].find(v => v['Village Councils'].toLowerCase().includes(searchName)); if (foundVc) break; } if (foundVc) break; }
-    if (!foundVc) { document.getElementById('adminGallery').innerHTML = '<p style="color:var(--text-soft);text-align:center;font-size:13px;">No Village Council found with that name.</p>'; return; }
-    targetVcId = foundVc._id;
-  }
-  const selectedDate = document.getElementById('g_date').value;
-  let url = `/api/images?vcId=${targetVcId}`; if (selectedDate) url += `&date=${selectedDate}`;
-  const res = await fetch(url); const entries = await res.json(); let html = '';
-  if (entries.length === 0) html = '<p style="color:var(--text-soft);text-align:center;font-size:13px;">No images found for this selection.</p>';
-  entries.forEach(e => {
-    html += `<div style="border:1px solid var(--glass-border);border-radius:10px;margin-bottom:15px;padding:15px;background:rgba(0,0,0,0.2);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong style="color:var(--green-glow);">${e.date}</strong> (${e.pairs.length} Pairs)</div>`;
-    if(userRole === 'admin') html += `<button class="btn-red" style="width:auto;padding:6px 12px;font-size:12px;" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;
-    html += `</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">`;
-    e.pairs.forEach(p => {
-      const thumbBefore = p.before.url.replace('/upload/', '/upload/w_150,h_112,c_fill/'); const thumbAfter = p.after.url.replace('/upload/', '/upload/w_150,h_112,c_fill/');
-      html += `<div style="position:relative;"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--glass-border);" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--glass-border);margin-left:4px;" alt="After"></div>`;
-    });
-    html += `</div></div>`;
-  });
-  document.getElementById('adminGallery').innerHTML = html;
-}
-async function deleteDate(entryId) { if(!confirm('Delete ALL pairs for this date?')) return; await fetch(`/api/dateentry/${entryId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadGallery(); loadAnalytics(); loadNonCompliant(); loadCloudinaryUsage(); }
-
-async function uploadImages() {
-  const targetVcId = userRole === 'admin' ? vcSelect.value : vcId;
-  if(!targetVcId) return alert('Please select VC first.');
-  const selectedDate = document.getElementById('date').value;
-  if(!selectedDate) return alert('Please select date.');
-  msg.innerText = 'Compressing & Uploading...';
-  const offlineData = { vcId: targetVcId, date: selectedDate }; let anyFilesSelected = false;
-  for(let i=1; i<=4; i++) {
-    const bFile = document.getElementById(`p${i}b`).files[0]; const aFile = document.getElementById(`p${i}a`).files[0];
-    if(bFile && aFile) {
-      anyFilesSelected = true;
-      const compressedB = await imageCompression(bFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 }); const compressedA = await imageCompression(aFile, { maxSizeMB: 0.14, maxWidthOrHeight: 1024 });
-      if (!navigator.onLine) { offlineData[`pair${i}_before`] = compressedB; offlineData[`pair${i}_after`] = compressedA; }
-      else {
-        const formData = new FormData(); formData.append('vcId', targetVcId); formData.append('date', selectedDate); formData.append(`pair${i}_before`, compressedB); formData.append(`pair${i}_after`, compressedA);
-        const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
-        const data = await res.json(); msg.innerText = '✅ ' + data.msg;
-      }
-    }
-  }
-  if (!anyFilesSelected) return msg.innerText = '❌ Please select at least one Before & After pair.';
-  if (!navigator.onLine) { await saveOfflineUpload(offlineData); msg.innerText = '📱 No internet. Upload saved offline! Will auto-sync when online.'; }
-  loadGallery(); if(userRole === 'admin') { loadAnalytics(); loadNonCompliant(); loadCloudinaryUsage(); }
-}
-
-async function loadUsers() {
-  const search = document.getElementById('userSearch').value; const dateFilter = document.getElementById('userDateFilter').value;
-  const res = await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}&date=${dateFilter}`, { headers: { 'Authorization': 'Bearer ' + token } });
-  const data = await res.json();
-  document.getElementById('statusHeader').style.display = dateFilter ? 'table-cell' : 'none';
-  userTableBody.innerHTML = data.users.map(u => {
-    let statusHtml = '';
-    if (dateFilter) { const pairs = u.uploadedPairs || 0; const color = pairs === 4 ? '#2bff9a' : (pairs > 0 ? '#ffd76b' : '#ff5a6e'); statusHtml = `<td style="color:${color};font-weight:700;">${pairs}/4 Pairs</td>`; }
-    return `<tr><td style="color:var(--green-glow);font-weight:600;font-family:monospace;">${u.username}</td><td>${u.district} / ${u.tehsil || ''} / ${u.vcName || ''}</td>${statusHtml}<td><button class="btn-gold" style="width:auto;padding:6px 10px;font-size:11px;margin-right:5px;" onclick="resetPass('${u._id}')">🔑 Reset</button><button class="btn-red" style="width:auto;padding:6px 10px;font-size:11px;" onclick="deleteUser('${u._id}')">🗑 Delete</button></td></tr>`;
-  }).join('');
-  document.getElementById('paginationInfo').innerText = `Page ${data.currentPage} of ${data.totalPages} (${data.totalUsers} Total Users)`;
-  document.getElementById('prevPageBtn').style.display = data.currentPage > 1 ? 'inline-flex' : 'none';
-  document.getElementById('nextPageBtn').style.display = data.currentPage < data.totalPages ? 'inline-flex' : 'none';
-}
-async function createUser() { const u = document.getElementById('newUsername').value; const p = document.getElementById('newPassword').value; const vcId = document.getElementById('newVcSelect').value; const vcName = document.getElementById('newVcSelect').selectedOptions[0]?.dataset.name; const district = document.getElementById('newDistSelect').value; const tehsil = document.getElementById('newTehsilSelect').value; if(!u) return alert('Please enter username'); if(!vcId) return alert('Please select District, Tehsil, and VC'); const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ username: u, password: p || '12345', vcId, district, tehsil, vcName }) }); if(res.ok) { document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; alert('User created!'); loadUsers(); } else { const err = await res.json(); alert(err.msg); } }
-async function generateAccounts() { if(!confirm('This will create accounts for all 3,634 VCs. Continue?')) return; userMsg.innerText = 'Generating... This may take 30 seconds.'; const res = await fetch('/api/users/generate', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); const data = await res.json(); userMsg.innerText = '✅ ' + data.msg; loadUsers(); }
-async function downloadCSV() { window.location.href = '/api/users/csv?token=' + token; }
-async function resetPass(id) { await fetch(`/api/users/reset/${id}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); alert('Password reset to 12345'); }
-async function deleteUser(id) { if(!confirm('Delete this user?')) return; await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); loadUsers(); }
-
-async function downloadPDF() { const d = document.getElementById('pdfDistSelect').value; const t = document.getElementById('pdfTehsilSelect').value; if(!d || !t) return alert('Please select District and Tehsil first.'); document.getElementById('archiveMsg').innerText = 'Generating Tehsil PDF... This may take 30-60 seconds depending on data size.'; try { const res = await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_${t}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Tehsil PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
-async function downloadDistrictPDF() { const d = document.getElementById('pdfDistOnlySelect').value; if(!d) return alert('Please select a District first.'); document.getElementById('archiveMsg').innerText = 'Generating District PDF... This may take 30-60 seconds depending on data size.'; try { const res = await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ District PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
-async function downloadOverallPDF() { document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial PDF... This may take 60+ seconds.'; try { const res = await fetch(`/api/download/pdf/overall`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) { const errText = await res.text(); throw new Error(errText); } const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Overall_Provincial_Report.pdf`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Overall PDF downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ ' + e.message; } }
-async function downloadZip() { const d = document.getElementById('zipDistSelect').value; if(!d) return alert('Please select District first.'); document.getElementById('archiveMsg').innerText = 'Generating ZIP Archive... This may take 1-2 minutes.'; try { const res = await fetch(`/api/download/zip/district/${encodeURIComponent(d)}`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) throw new Error('Failed'); const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${d}_6Day_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ ZIP Archive downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate ZIP.'; } }
-async function downloadOverallZip() { document.getElementById('archiveMsg').innerText = 'Generating Overall Provincial ZIP... This may take several minutes depending on data size.'; try { const res = await fetch(`/api/download/zip/overall`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) throw new Error('Failed'); const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Overall_Provincial_Archive.zip`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); document.getElementById('archiveMsg').innerText = '✅ Overall ZIP Archive downloaded successfully!'; } catch(e) { document.getElementById('archiveMsg').innerText = '❌ Failed to generate Overall ZIP.'; } }
-
+const request=indexedDB.open('pakSaafDB',1);
+request.onupgradeneeded=(event)=>{db=event.target.result;if(!db.objectStoreNames.contains('pendingUploads'))db.createObjectStore('pendingUploads',{keyPath:'id',autoIncrement:true});};
+request.onsuccess=(event)=>{db=event.target.result;if(navigator.onLine)syncPendingUploads();};
+window.addEventListener('online',syncPendingUploads);
+function saveOfflineUpload(dataObj){return new Promise((resolve,reject)=>{const tx=db.transaction('pendingUploads','readwrite');const store=tx.objectStore('pendingUploads');const req=store.add(dataObj);req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
+async function syncPendingUploads(){if(!db)return;const token=localStorage.getItem('token');if(!token)return;const tx=db.transaction('pendingUploads','readonly');const store=tx.objectStore('pendingUploads');const allReq=store.getAll();allReq.onsuccess=async()=>{const pending=allReq.result;if(pending.length>0){msg.innerText='🔄 Syncing offline uploads...';for(const item of pending){const formData=new FormData();formData.append('vcId',item.vcId);formData.append('date',item.date);for(let i=1;i<=4;i++){if(item[`pair${i}_before`])formData.append(`pair${i}_before`,item[`pair${i}_before`]);if(item[`pair${i}_after`])formData.append(`pair${i}_after`,item[`pair${i}_after`]);}const res=await fetch('/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:formData});if(res.status===401||res.status===403){msg.innerText='❌ Session expired! Please log in again to sync.';return;}}const clearTx=db.transaction('pendingUploads','readwrite');clearTx.objectStore('pendingUploads').clear();msg.innerText='✅ Offline uploads synced successfully!';}};}
+function logout(){localStorage.clear();window.location.href='/login.html';}
+const sectionTitles={upload:['Upload Images','Upload before/after image pairs for your Village Council'],analytics:['Compliance Analytics','Real-time monitoring across districts'],images:['Image Management','Search any VC · Load images on demand'],noncompliant:['Zero Compliance Alerts','VCs with no image uploads on selected date'],storage:['Cloud Storage Monitor','Storage + bandwidth usage · Free tier limits'],archive:['Data Archive Center','Generate PDF / ZIP archives before auto-deletion'],users:['User Management','Manage VC Officer accounts']};
+document.querySelectorAll('.nav-item[data-section]').forEach(item=>{item.addEventListener('click',(e)=>{e.preventDefault();const sec=item.dataset.section;document.querySelectorAll('.nav-item[data-section]').forEach(n=>n.classList.remove('active'));item.classList.add('active');document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('section-'+sec).classList.add('active');document.getElementById('pageTitle').textContent=sectionTitles[sec][0];document.getElementById('pageSub').textContent=sectionTitles[sec][1];if(window.innerWidth<980)document.getElementById('sidebar').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});if(!loadedSections[sec]){loadedSections[sec]=true;if(sec==='analytics')loadAnalytics();if(sec==='noncompliant')loadNonCompliant();if(sec==='storage')loadCloudinaryUsage();if(sec==='users')loadUsers();}});});
+function buildUploaders(){let html='';for(let i=1;i<=4;i++)html+=`<div class="pair-uploader"><h4>Pair ${i}</h4><input type="file" id="p${i}b" accept="image/*"><input type="file" id="p${i}a" accept="image/*"></div>`;document.getElementById('pairUploaders').innerHTML=html;}
+function getPakistanDateString(date=new Date()){const pkTime=new Date(date.getTime()+(5*60*60*1000));const year=pkTime.getUTCFullYear();const month=String(pkTime.getUTCMonth()+1).padStart(2,'0');const day=String(pkTime.getUTCDate()).padStart(2,'0');return`${year}-${month}-${day}`;}
+function getRecentPakistanDates(count){const dates=[];let daysAgo=0;while(dates.length<count){const d=new Date();d.setDate(d.getDate()-daysAgo);const pkDate=new Date(d.getTime()+(5*60*60*1000));if(pkDate.getUTCDay()!==0){dates.push(getPakistanDateString(d));}daysAgo++;}return dates;}
+async function init(){buildUploaders();const recentDates=getRecentPakistanDates(6);const dateOptionsHtml=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('date').innerHTML=dateOptionsHtml;document.getElementById('g_date').innerHTML='<option value="">All Dates</option>'+dateOptionsHtml;const res=await fetch('/api/hierarchy');const villages=await res.json();villages.forEach(v=>{if(!hierarchy[v.District])hierarchy[v.District]={};if(!hierarchy[v.District][v.Tehsil])hierarchy[v.District][v.Tehsil]=[];hierarchy[v.District][v.Tehsil].push(v);});if(userRole==='admin'){document.getElementById('userName').textContent='DGLG Admin';document.getElementById('userRole').textContent='Super Admin';document.getElementById('userAvatar').textContent='AD';document.getElementById('distName').innerText="DGLG Main Admin (All Districts)";document.getElementById('adminSelects').style.display='block';document.getElementById('navNonCompliant').style.display='flex';document.getElementById('navUsers').style.display='flex';document.getElementById('navArchive').style.display='flex';document.getElementById('navStorage').style.display='flex';document.getElementById('analyticsFilters').style.display='flex';document.getElementById('galleryFilters').style.display='flex';}else{document.getElementById('userName').textContent=localStorage.getItem('vcName')||'Officer';document.getElementById('userRole').textContent='VC Officer';document.getElementById('userAvatar').textContent='VC';document.getElementById('distName').innerText=`${localStorage.getItem('district')} → ${localStorage.getItem('vcName')}`;document.getElementById('galleryFilters').style.display='flex';document.getElementById('g_vc_search').style.display='none';document.getElementById('officerVcName').style.display='block';document.getElementById('officerVcName').querySelector('strong').innerText=localStorage.getItem('vcName');}if(userRole==='admin'){let dHtml='<option value="">Select District</option>';Object.keys(hierarchy).forEach(d=>dHtml+=`<option>${d}</option>`);document.getElementById('distSelect').innerHTML=dHtml;document.getElementById('newDistSelect').innerHTML=dHtml;document.getElementById('pdfDistSelect').innerHTML=dHtml;document.getElementById('pdfDistOnlySelect').innerHTML=dHtml;document.getElementById('zipDistSelect').innerHTML=dHtml;let vcListHtml='';Object.keys(hierarchy).forEach(d=>{Object.keys(hierarchy[d]).forEach(t=>{hierarchy[d][t].forEach(v=>{vcListHtml+=`<option value="${v['Village Councils']}">`;});});});document.getElementById('vclist').innerHTML=vcListHtml;let ncDateHtml='<option value="overall">Overall (Last 6 Days)</option>';ncDateHtml+=recentDates.map(d=>`<option value="${d}">${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</option>`).join('');document.getElementById('nonCompliantDateSelect').innerHTML=ncDateHtml;document.getElementById('userDateFilter').innerHTML='<option value="">All Dates (Accounts)</option>'+dateOptionsHtml;}document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please select a date and click Load Images to view data.</p>';}
+async function loadAnalytics(){let url='/api/stats/compliance';if(userRole==='admin'){const searchName=document.getElementById('a_vc_search').value.toLowerCase();if(searchName){let foundVc=null;for(const d in hierarchy){for(const t in hierarchy[d]){foundVc=hierarchy[d][t].find(v=>v['Village Councils'].toLowerCase().includes(searchName));if(foundVc)break;}if(foundVc)break;}if(foundVc){url+='?vcId='+foundVc._id;}else{document.getElementById('statTotalVcs').innerText='0';document.getElementById('statUploadedToday').innerText='0';document.getElementById('statUploaded6Days').innerText='0';if(chartInstance)chartInstance.destroy();alert('No Village Council found with that name.');return;}}}const res=await fetch(url,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();document.getElementById('statTotalVcs').innerText=data.totalVcs;document.getElementById('statUploadedToday').innerText=data.uploadedTodayCount;document.getElementById('statUploaded6Days').innerText=data.uploaded6DaysCount;if(chartInstance)chartInstance.destroy();const ctx=document.getElementById('districtChart').getContext('2d');const dataLabelPlugin={id:'dataLabelPlugin',afterDatasetsDraw(chart){const{ctx}=chart;ctx.save();ctx.font='700 12px Inter, sans-serif';ctx.fillStyle='#2bff9a';ctx.textAlign='center';chart.data.datasets[0].data.forEach((value,index)=>{const meta=chart.getDatasetMeta(0);const bar=meta.data[index];if(bar)ctx.fillText(value+'%',bar.x,bar.y-8);});ctx.restore();}};chartInstance=new Chart(ctx,{type:'bar',data:{labels:data.chartLabels,datasets:[{label:'Daily Compliance %',data:data.chartData,backgroundColor:'#19c37d',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(4,19,13,0.95)',titleColor:'#2bff9a',bodyColor:'#f3fff8',borderColor:'#19c37d',borderWidth:1,callbacks:{label:function(context){return context.raw+'% Compliance';}}}},scales:{y:{beginAtZero:true,max:100,ticks:{color:'#a7c4b6',callback:function(value){return value+'%';},font:{family:'Inter',size:11}},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#a7c4b6',font:{family:'Inter',size:11}},grid:{display:false}}}},plugins:[dataLabelPlugin]});}
+async function loadCloudinaryUsage(){const res=await fetch('/api/cloudinary/usage',{headers:{'Authorization':'Bearer '+token}});if(!res.ok)return;const data=await res.json();if(storageChartInstance)storageChartInstance.destroy();if(bandwidthChartInstance)bandwidthChartInstance.destroy();const sCtx=document.getElementById('storageChart').getContext('2d');const storageRemaining=data.storage.limit-data.storage.used;document.getElementById('storageText').innerText=`${data.storage.used} MB / ${data.storage.limit} MB`;storageChartInstance=new Chart(sCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.storage.used,storageRemaining>0?storageRemaining:0],backgroundColor:['#ff5a6e','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});const bCtx=document.getElementById('bandwidthChart').getContext('2d');const bandwidthRemaining=data.bandwidth.limit-data.bandwidth.used;document.getElementById('bandwidthText').innerText=`${data.bandwidth.used} MB / ${data.bandwidth.limit} MB`;bandwidthChartInstance=new Chart(bCtx,{type:'doughnut',data:{labels:['Used','Remaining'],datasets:[{data:[data.bandwidth.used,bandwidthRemaining>0?bandwidthRemaining:0],backgroundColor:['#f4b740','#19c37d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#a7c4b6',font:{family:'Inter',size:11}}}}}});}
+async function loadNonCompliant(){const selectedDate=document.getElementById('nonCompliantDateSelect').value;if(!selectedDate)return;const res=await fetch(`/api/stats/noncompliant?date=${selectedDate}`,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();nonCompliantData=data.villages;if(selectedDate==='overall')document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Overall - Last 6 Days)`;else{const formattedDate=new Date(selectedDate+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'});document.getElementById('nonCompliantTitle').innerText=`🚨 Zero Compliance Alert (Date: ${formattedDate})`;}document.getElementById('nonCompliantCount').innerText=`Total: ${data.count} VCs`;document.getElementById('nonCompliantBadge').innerText=data.count;document.getElementById('nonCompliantBody').innerHTML=data.villages.map(v=>`<tr><td>${v.district}</td><td>${v.tehsil}</td><td>${v.vcName}</td><td>${v.officer}</td></tr>`).join('');}
+function downloadNonCompliantCSV(){let csv='District,Tehsil,Village Council,Assigned Officer\n';nonCompliantData.forEach(v=>{csv+=`${v.district},${v.tehsil},${v.vcName},${v.officer}\n`;});const blob=new Blob([csv],{type:'text/csv'});const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Non_Compliant_VCs.csv';document.body.appendChild(a);a.click();a.remove();}
+function updateTehsils(){let tHtml='<option value="">Select Tehsil</option>';Object.keys(hierarchy[distSelect.value]||{}).forEach(t=>tHtml+=`<option>${t}</option>`);document.getElementById('tehsilSelect').innerHTML=tHtml;document.getElementById('vcSelect').innerHTML='';}
+function updateVCs(){let vHtml='<option value="">Select VC</option>';(hierarchy[distSelect.value][tehsilSelect.value]||[]).forEach(v=>vHtml+=`<option value="${v._id}">${v['Village Councils']}</option>`);document.getElementById('vcSelect').innerHTML=vHtml;}
+function updateNewTehsils(){let tHtml='<option value="">Select Tehsil</option>';Object.keys(hierarchy[newDistSelect.value]||{}).forEach(t=>tHtml+=`<option>${t}</option>`);document.getElementById('newTehsilSelect').innerHTML=tHtml;document.getElementById('newVcSelect').innerHTML='';}
+function updateNewVCs(){let vHtml='<option value="">Select VC</option>';(hierarchy[newDistSelect.value][newTehsilSelect.value]||[]).forEach(v=>vHtml+=`<option value="${v._id}" data-name="${v['Village Councils']}">${v['Village Councils']}</option>`);document.getElementById('newVcSelect').innerHTML=vHtml;}
+function updatePdfTehsils(){let tHtml='<option value="">Select Tehsil</option>';Object.keys(hierarchy[pdfDistSelect.value]||{}).forEach(t=>tHtml+=`<option>${t}</option>`);document.getElementById('pdfTehsilSelect').innerHTML=tHtml;}
+async function loadGallery(){let targetVcId=vcId;if(userRole==='admin'){const searchName=document.getElementById('g_vc_search').value.toLowerCase();if(!searchName){document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">Please type a VC name and click Load Images.</p>';return;}let foundVc=null;for(const d in hierarchy){for(const t in hierarchy[d]){foundVc=hierarchy[d][t].find(v=>v['Village Councils'].toLowerCase().includes(searchName));if(foundVc)break;}if(foundVc)break;}if(!foundVc){document.getElementById('adminGallery').innerHTML='<p style="color:var(--text-soft);text-align:center;font-size:13px;">No Village Council found with that name.</p>';return;}targetVcId=foundVc._id;}const selectedDate=document.getElementById('g_date').value;let url=`/api/images?vcId=${targetVcId}`;if(selectedDate)url+=`&date=${selectedDate}`;const res=await fetch(url);const entries=await res.json();let html='';if(entries.length===0)html='<p style="color:var(--text-soft);text-align:center;font-size:13px;">No images found for this selection.</p>';entries.forEach(e=>{html+=`<div style="border:1px solid var(--glass-border);border-radius:10px;margin-bottom:15px;padding:15px;background:rgba(0,0,0,0.2);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong style="color:var(--green-glow);">${e.date}</strong> (${e.pairs.length} Pairs)</div>`;if(userRole==='admin')html+=`<button class="btn-red" style="width:auto;padding:6px 12px;font-size:12px;" onclick="deleteDate('${e._id}')">🗑 Clear Day</button>`;html+=`</div><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">`;e.pairs.forEach(p=>{const thumbBefore=p.before.url.replace('/upload/','/upload/w_150,h_112,c_fill/');const thumbAfter=p.after.url.replace('/upload/','/upload/w_150,h_112,c_fill/');html+=`<div style="position:relative;"><img src="${thumbBefore}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--glass-border);" alt="Before"><img src="${thumbAfter}" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--glass-border);margin-left:4px;" alt="After"></div>`;});html+=`</div></div>`;});document.getElementById('adminGallery').innerHTML=html;}
+async function deleteDate(entryId){if(!confirm('Delete ALL pairs for this date?'))return;await fetch(`/api/dateentry/${entryId}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});loadGallery();if(loadedSections.analytics)loadAnalytics();if(loadedSections.noncompliant)loadNonCompliant();if(loadedSections.storage)loadCloudinaryUsage();}
+async function uploadImages(){const targetVcId=userRole==='admin'?vcSelect.value:vcId;if(!targetVcId)return alert('Please select VC first.');const selectedDate=document.getElementById('date').value;if(!selectedDate)return alert('Please select date.');msg.innerText='Compressing & Uploading...';const offlineData={vcId:targetVcId,date:selectedDate};let anyFilesSelected=false;for(let i=1;i<=4;i++){const bFile=document.getElementById(`p${i}b`).files[0];const aFile=document.getElementById(`p${i}a`).files[0];if(bFile&&aFile){anyFilesSelected=true;const compressedB=await imageCompression(bFile,{maxSizeMB:0.14,maxWidthOrHeight:1024});const compressedA=await imageCompression(aFile,{maxSizeMB:0.14,maxWidthOrHeight:1024});if(!navigator.onLine){offlineData[`pair${i}_before`]=compressedB;offlineData[`pair${i}_after`]=compressedA;}else{const formData=new FormData();formData.append('vcId',targetVcId);formData.append('date',selectedDate);formData.append(`pair${i}_before`,compressedB);formData.append(`pair${i}_after`,compressedA);const res=await fetch('/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:formData});const data=await res.json();msg.innerText='✅ '+data.msg;}}}if(!anyFilesSelected)return msg.innerText='❌ Please select at least one Before & After pair.';if(!navigator.onLine){await saveOfflineUpload(offlineData);msg.innerText='📱 No internet. Upload saved offline! Will auto-sync when online.';}loadedSections.analytics=false;loadedSections.noncompliant=false;loadedSections.storage=false;}
+async function loadUsers(){const search=document.getElementById('userSearch').value;const dateFilter=document.getElementById('userDateFilter').value;const res=await fetch(`/api/users/paginated?page=${currentUserPage}&search=${search}&date=${dateFilter}`,{headers:{'Authorization':'Bearer '+token}});const data=await res.json();document.getElementById('statusHeader').style.display=dateFilter?'table-cell':'none';userTableBody.innerHTML=data.users.map(u=>{let statusHtml='';if(dateFilter){const pairs=u.uploadedPairs||0;const color=pairs===4?'#2bff9a':(pairs>0?'#ffd76b':'#ff5a6e');statusHtml=`<td style="color:${color};font-weight:700;">${pairs}/4 Pairs</td>`;}return `<tr><td style="color:var(--green-glow);font-weight:600;font-family:monospace;">${u.username}</td><td>${u.district} / ${u.tehsil||''} / ${u.vcName||''}</td>${statusHtml}<td><button class="btn-gold" style="width:auto;padding:6px 10px;font-size:11px;margin-right:5px;" onclick="resetPass('${u._id}')">🔑 Reset</button><button class="btn-red" style="width:auto;padding:6px 10px;font-size:11px;" onclick="deleteUser('${u._id}')">🗑 Delete</button></td></tr>`;}).join('');document.getElementById('paginationInfo').innerText=`Page ${data.currentPage} of ${data.totalPages} (${data.totalUsers} Total Users)`;document.getElementById('prevPageBtn').style.display=data.currentPage>1?'inline-flex':'none';document.getElementById('nextPageBtn').style.display=data.currentPage<data.totalPages?'inline-flex':'none';}
+async function createUser(){const u=document.getElementById('newUsername').value;const p=document.getElementById('newPassword').value;const vcId=document.getElementById('newVcSelect').value;const vcName=document.getElementById('newVcSelect').selectedOptions[0]?.dataset.name;const district=document.getElementById('newDistSelect').value;const tehsil=document.getElementById('newTehsilSelect').value;if(!u)return alert('Please enter username');if(!vcId)return alert('Please select District, Tehsil, and VC');const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({username:u,password:p||'12345',vcId,district,tehsil,vcName})});if(res.ok){document.getElementById('newUsername').value='';document.getElementById('newPassword').value='';alert('User created!');loadUsers();}else{const err=await res.json();alert(err.msg);}}
+async function generateAccounts(){if(!confirm('This will create accounts for all 3,634 VCs. Continue?'))return;userMsg.innerText='Generating... This may take 30 seconds.';const res=await fetch('/api/users/generate',{method:'POST',headers:{'Authorization':'Bearer '+token}});const data=await res.json();userMsg.innerText='✅ '+data.msg;loadUsers();}
+async function downloadCSV(){window.location.href='/api/users/csv?token='+token;}
+async function resetPass(id){await fetch(`/api/users/reset/${id}`,{method:'POST',headers:{'Authorization':'Bearer '+token}});alert('Password reset to 12345');}
+async function deleteUser(id){if(!confirm('Delete this user?'))return;await fetch(`/api/users/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});loadUsers();}
+async function downloadPDF(){const d=document.getElementById('pdfDistSelect').value;const t=document.getElementById('pdfTehsilSelect').value;if(!d||!t)return alert('Please select District and Tehsil first.');document.getElementById('archiveMsg').innerText='Generating Tehsil PDF... This may take 30-60 seconds depending on data size.';try{const res=await fetch(`/api/download/pdf/tehsil/${encodeURIComponent(d)}/${encodeURIComponent(t)}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${d}_${t}_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ Tehsil PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
+async function downloadDistrictPDF(){const d=document.getElementById('pdfDistOnlySelect').value;if(!d)return alert('Please select a District first.');document.getElementById('archiveMsg').innerText='Generating District PDF... This may take 30-60 seconds depending on data size.';try{const res=await fetch(`/api/download/pdf/district/${encodeURIComponent(d)}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${d}_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ District PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
+async function downloadOverallPDF(){document.getElementById('archiveMsg').innerText='Generating Overall Provincial PDF... This may take 60+ seconds.';try{const res=await fetch(`/api/download/pdf/overall`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok){const errText=await res.text();throw new Error(errText);}const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Overall_Provincial_Report.pdf`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ Overall PDF downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ '+e.message;}}
+async function downloadZip(){const d=document.getElementById('zipDistSelect').value;if(!d)return alert('Please select District first.');document.getElementById('archiveMsg').innerText='Generating ZIP Archive... This may take 1-2 minutes.';try{const res=await fetch(`/api/download/zip/district/${encodeURIComponent(d)}`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok)throw new Error('Failed');const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${d}_6Day_Archive.zip`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ ZIP Archive downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ Failed to generate ZIP.';}}
+async function downloadOverallZip(){document.getElementById('archiveMsg').innerText='Generating Overall Provincial ZIP... This may take several minutes depending on data size.';try{const res=await fetch(`/api/download/zip/overall`,{headers:{'Authorization':'Bearer '+token}});if(!res.ok)throw new Error('Failed');const blob=await res.blob();const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Overall_Provincial_Archive.zip`;document.body.appendChild(a);a.click();a.remove();window.URL.revokeObjectURL(url);document.getElementById('archiveMsg').innerText='✅ Overall ZIP Archive downloaded successfully!';}catch(e){document.getElementById('archiveMsg').innerText='❌ Failed to generate Overall ZIP.';}}
 init();
 </script>
 </body>
