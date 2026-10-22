@@ -500,61 +500,103 @@ app.delete('/api/dateentry/:entryId', auth, async (req, res) => {
 
 // --- PDF & ZIP ARCHIVE ROUTES ---
 
-// Helper function to generate PDF pages (LEGAL SIZE — 3 pairs per page, best resolution)
+// Helper function to generate PDF pages (LEGAL — 3 pairs/page, professional borders, crisp images)
 async function generatePdf(doc, entries, villages) {
-  const marginX = 40;
-  const marginTop = 40;
-  const marginBottom = 40;
-  const pageWidth = doc.page.width - (marginX * 2);   // 532pt available
-  const pageHeight = doc.page.height;                  // 1008pt for Legal
+  const marginX = 35;
+  const marginTop = 35;
+  const marginBottom = 50;  // Extra for footer
+  const pageWidth = doc.page.width - (marginX * 2);
+  const pageHeight = doc.page.height;
   
-  // Image dimensions — SHRUNK slightly so 3 pairs fit
-  const imgGap = 15;
-  const imgWidth = (pageWidth - imgGap) / 2;            // ~258pt each
-  const imgHeight = 230;                                 // Was 250, now 230 (still crisp)
+  // Image dimensions — sized to GUARANTEE 3 pairs fit per page
+  const imgGap = 12;
+  const imgWidth = (pageWidth - imgGap) / 2;            // ~268pt each
+  const imgHeight = 195;                                 // Crisp enough at w_600
   
-  // TIGHTER spacing per pair block
-  const headerHeight = 20;
-  const labelHeight = 16;
-  const pairSpacing = 8;
-  const pairBlockHeight = headerHeight + imgHeight + labelHeight + pairSpacing;
-  // = 20 + 230 + 16 + 8 = 274pt per pair × 3 = 822pt (fits in 928pt with 106pt spare)
+  // Tight but professional spacing
+  const headerHeight = 24;
+  const labelHeight = 14;
+  const pairSpacing = 10;
+  const pairBlockHeight = headerHeight + imgHeight + 6 + labelHeight + pairSpacing;
+  // = 24 + 195 + 6 + 14 + 10 = 249pt per pair × 3 = 747pt (fits in 923pt with 176pt spare)
   
   const villageMap = {};
   villages.forEach(v => villageMap[v._id] = v);
-
+  
+  let pairCount = 0;
+  let pageNumber = 1;
+  
+  // Draw outer page border + footer on first page
+  drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber);
+  
   for (const entry of entries) {
     const village = villageMap[entry.vcId];
     if (!village) continue;
     
     for (const pair of entry.pairs) {
-      // CHECK: Will this pair fit on current page? If not, start new page
+      pairCount++;
+      
+      // CHECK: Will this pair fit on current page?
       const neededSpace = doc.y + pairBlockHeight;
       const availableSpace = pageHeight - marginBottom;
       if (neededSpace > availableSpace) {
         doc.addPage();
+        pageNumber++;
+        drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber);
       }
       
       let currentY = doc.y;
       
-      // Header — district > tehsil > VC + date + pair number
-      doc.fontSize(10).fillColor('#074822').font('Helvetica-Bold').text(
-        `${village.District} > ${village.Tehsil} > ${village['Village Councils']}  |  ${entry.date}  |  Pair ${pair.slot}`,
-        marginX, currentY, { width: pageWidth }
+      // === HEADER BAR with green background ===
+      doc.save();
+      doc.rect(marginX, currentY, pageWidth, headerHeight)
+         .fillColor('#0d7d4f').fill();
+      doc.restore();
+      
+      // Pair number badge (circle on left)
+      doc.save();
+      doc.circle(marginX + 14, currentY + headerHeight/2, 9)
+         .fillColor('#ffd76b').fill();
+      doc.restore();
+      doc.fontSize(10).fillColor('#04130d').font('Helvetica-Bold').text(
+        String(pairCount), marginX + 9, currentY + headerHeight/2 - 5, 
+        { width: 10, align: 'center' }
       );
-      currentY += headerHeight;
       
-      // BEST RESOLUTION image URLs (w_700 = crisp on print, q_auto:best = highest quality)
-      const bUrl = pair.before.url.replace('/upload/', '/upload/w_700,h_620,c_fill,g_auto,q_auto:best/');
-      const aUrl = pair.after.url.replace('/upload/', '/upload/w_700,h_620,c_fill,g_auto,q_auto:best/');
+      // Header text on green bar
+      doc.fontSize(9).fillColor('#ffffff').font('Helvetica-Bold').text(
+        `${village.District}  ›  ${village.Tehsil}  ›  ${village['Village Councils']}`,
+        marginX + 30, currentY + 4, { width: pageWidth - 200 }
+      );
+      doc.fontSize(8).fillColor('#a7c4b6').font('Helvetica').text(
+        `${entry.date}  |  Pair ${pair.slot}`,
+        marginX + 30, currentY + 13, { width: pageWidth - 200 }
+      );
       
-      // BEFORE image (left side) — with graceful fallback
+      // Right side: VC label badge
+      doc.fontSize(8).fillColor('#ffd76b').font('Helvetica-Bold').text(
+        `VC REPORT`, marginX + pageWidth - 80, currentY + 8, 
+        { width: 80, align: 'right' }
+      );
+      
+      currentY += headerHeight + 6;
+      
+      // === IMAGES (crisp w_600 resolution) ===
+      const bUrl = pair.before.url.replace('/upload/', '/upload/w_600,h_460,c_fill,g_auto,q_auto:best/');
+      const aUrl = pair.after.url.replace('/upload/', '/upload/w_600,h_460,c_fill,g_auto,q_auto:best/');
+      
+      // BEFORE image with border frame
       try {
         const bRes = await axios.get(bUrl, { 
           responseType: 'arraybuffer',
           timeout: 12000,
           maxContentLength: 2 * 1024 * 1024
         });
+        // Light gray border around image
+        doc.save();
+        doc.rect(marginX - 1, currentY - 1, imgWidth + 2, imgHeight + 2)
+           .lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.restore();
         doc.image(Buffer.from(bRes.data), marginX, currentY, { width: imgWidth, height: imgHeight });
       } catch(e) { 
         console.log(`❌ Before image failed (Pair ${pair.slot}):`, e.message);
@@ -563,19 +605,22 @@ async function generatePdf(doc, entries, villages) {
            .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
         doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
-          '⚠️ Image unavailable', 
-          marginX, currentY + imgHeight/2 - 6, 
+          '⚠️ Image unavailable', marginX, currentY + imgHeight/2 - 6, 
           { width: imgWidth, align: 'center' }
         );
       }
       
-      // AFTER image (right side) — with graceful fallback
+      // AFTER image with border frame
       try {
         const aRes = await axios.get(aUrl, { 
           responseType: 'arraybuffer',
           timeout: 12000,
           maxContentLength: 2 * 1024 * 1024
         });
+        doc.save();
+        doc.rect(marginX + imgWidth + imgGap - 1, currentY - 1, imgWidth + 2, imgHeight + 2)
+           .lineWidth(1).strokeColor('#cccccc').stroke();
+        doc.restore();
         doc.image(Buffer.from(aRes.data), marginX + imgWidth + imgGap, currentY, { width: imgWidth, height: imgHeight });
       } catch(e) { 
         console.log(`❌ After image failed (Pair ${pair.slot}):`, e.message);
@@ -584,25 +629,69 @@ async function generatePdf(doc, entries, villages) {
            .lineWidth(1.5).strokeColor('#ff5a6e').fillColor('#f8f8f8').fillAndStroke();
         doc.restore();
         doc.fontSize(11).fillColor('#999999').font('Helvetica-Bold').text(
-          '⚠️ Image unavailable', 
-          marginX + imgWidth + imgGap, currentY + imgHeight/2 - 6, 
+          '⚠️ Image unavailable', marginX + imgWidth + imgGap, currentY + imgHeight/2 - 6, 
           { width: imgWidth, align: 'center' }
         );
       }
       
-      currentY += imgHeight + 3;
+      currentY += imgHeight + 4;
       
-      // Bold colored labels under images
-      doc.fontSize(10).fillColor('#cc3046').font('Helvetica-Bold').text('BEFORE', marginX, currentY, { width: imgWidth, align: 'center' });
-      doc.fillColor('#0d7d4f').text('AFTER', marginX + imgWidth + imgGap, currentY, { width: imgWidth, align: 'center' });
+      // === LABELS under images (in colored boxes) ===
+      // BEFORE label (red box)
+      doc.save();
+      doc.rect(marginX, currentY, imgWidth, labelHeight)
+         .fillColor('#cc3046').fill();
+      doc.restore();
+      doc.fontSize(9).fillColor('#ffffff').font('Helvetica-Bold').text(
+        'BEFORE', marginX, currentY + 3, 
+        { width: imgWidth, align: 'center' }
+      );
       
-      // Reset font for next header
+      // AFTER label (green box)
+      doc.save();
+      doc.rect(marginX + imgWidth + imgGap, currentY, imgWidth, labelHeight)
+         .fillColor('#0d7d4f').fill();
+      doc.restore();
+      doc.fillColor('#ffffff').text(
+        'AFTER', marginX + imgWidth + imgGap, currentY + 3, 
+        { width: imgWidth, align: 'center' }
+      );
+      
+      // Reset for next pair
       doc.font('Helvetica').fillColor('#074822');
-      
-      // Position for next pair
       doc.y = currentY + labelHeight + pairSpacing;
     }
   }
+}
+
+// Helper: Draw page border + footer with page number
+function drawPageDecorations(doc, marginX, marginTop, pageWidth, pageHeight, pageNumber) {
+  // Outer page border (2pt green)
+  doc.save();
+  doc.rect(15, 15, doc.page.width - 30, pageHeight - 30)
+     .lineWidth(2).strokeColor('#0d7d4f').stroke();
+  doc.restore();
+  
+  // Inner thin border (0.5pt light)
+  doc.save();
+  doc.rect(20, 20, doc.page.width - 40, pageHeight - 40)
+     .lineWidth(0.5).strokeColor('#a7c4b6').stroke();
+  doc.restore();
+  
+  // Footer with page number + official text
+  const footerY = pageHeight - 30;
+  doc.fontSize(8).fillColor('#6f8a7e').font('Helvetica').text(
+    'Pak Saaf Image Gallery  ·  Directorate General, LG&RDD, Khyber Pakhtunkhwa',
+    marginX, footerY, { width: pageWidth - 100, align: 'left' }
+  );
+  doc.fontSize(8).fillColor('#0d7d4f').font('Helvetica-Bold').text(
+    `Page ${pageNumber}`,
+    marginX + pageWidth - 60, footerY, 
+    { width: 60, align: 'right' }
+  );
+  
+  // Reset font
+  doc.font('Helvetica').fillColor('#074822');
 }
 
 // 1. Tehsil-wise PDF
