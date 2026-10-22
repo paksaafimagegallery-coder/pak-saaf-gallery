@@ -4,46 +4,342 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Officer Login | Pak Saaf</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-<style>body{margin:0;font-family:'Inter',sans-serif;background:linear-gradient(135deg,#074822,#0b6b3a);height:100vh;display:flex;align-items:center;justify-content:center}.box{background:#fff;padding:40px;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.3);width:100%;max-width:400px;text-align:center}.logos{display:flex;justify-content:center;gap:20px;margin-bottom:20px}.logos img{height:80px;border-radius:8px}input{width:100%;padding:14px;margin-bottom:15px;border:1.5px solid #dde7e0;border-radius:8px;box-sizing:border-box}button{width:100%;padding:14px;background:#0b6b3a;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#04130d;
+  --bg-mid:#0a2a1e;
+  --glass:rgba(255,255,255,0.06);
+  --glass-strong:rgba(255,255,255,0.10);
+  --glass-border:rgba(255,255,255,0.12);
+  --green-primary:#19c37d;
+  --green-glow:#2bff9a;
+  --green-deep:#0d7d4f;
+  --gold:#f4b740;
+  --gold-soft:#ffd76b;
+  --red-alert:#ff5a6e;
+  --text-bright:#f3fff8;
+  --text-soft:#a7c4b6;
+  --text-mute:#6f8a7e;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(25,195,125,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(244,183,64,0.10) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-deep), var(--bg-mid));
+  background-attachment:fixed;
+  color:var(--text-bright);
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:30px 20px;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* Animated background bubbles */
+.bg-bubble{
+  position:fixed;border-radius:50%;
+  background:radial-gradient(circle, rgba(25,195,125,0.15), transparent 70%);
+  filter:blur(40px);
+  pointer-events:none;z-index:0;
+}
+.bg-bubble.b1{width:400px;height:400px;top:-100px;left:-100px;animation:float 18s ease-in-out infinite}
+.bg-bubble.b2{width:300px;height:300px;bottom:-80px;right:-80px;animation:float 22s ease-in-out infinite reverse}
+.bg-bubble.b3{width:250px;height:250px;top:40%;right:10%;animation:float 25s ease-in-out infinite}
+@keyframes float{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(40px,-30px) scale(1.1)}
+  66%{transform:translate(-30px,40px) scale(0.9)}
+}
+
+.box{
+  width:100%;max-width:440px;
+  background:var(--glass);
+  backdrop-filter:blur(30px) saturate(180%);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid var(--glass-border);
+  border-radius:24px;
+  padding:40px 36px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(25,195,125,0.1);
+  position:relative;overflow:hidden;
+  animation:cardIn 0.6s cubic-bezier(0.16,1,0.3,1);
+  z-index:1;
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(20px) scale(0.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--green-glow),transparent);
+}
+
+.logos{
+  display:flex;justify-content:center;gap:18px;margin-bottom:18px;
+}
+.logos img{
+  height:72px;border-radius:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  transition:transform 0.3s;
+}
+.logos img:hover{transform:translateY(-3px) scale(1.05)}
+
+.brand-block{text-align:center;margin-bottom:28px}
+.brand-title{
+  font-family:'Plus Jakarta Sans';font-weight:800;font-size:24px;
+  letter-spacing:-0.5px;margin-bottom:6px;
+  background:linear-gradient(135deg,#ffffff,var(--green-glow));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.brand-sub{font-size:13px;color:var(--text-soft);line-height:1.5}
+.brand-sub b{color:var(--green-glow);font-weight:700}
+
+.form-group{margin-bottom:16px;position:relative}
+.form-label{
+  display:block;font-size:11px;color:var(--text-soft);
+  text-transform:uppercase;letter-spacing:1.3px;font-weight:600;
+  margin-bottom:8px;text-align:left;
+}
+.input-wrap{position:relative}
+.input-wrap svg{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--text-mute);pointer-events:none;
+}
+input[type="text"], input[type="password"]{
+  width:100%;background:rgba(0,0,0,0.25);
+  border:1px solid var(--glass-border);border-radius:12px;
+  padding:13px 14px 13px 42px;color:var(--text-bright);
+  font-size:14px;font-family:inherit;outline:none;
+  transition:all 0.2s;
+  box-sizing:border-box;
+}
+input::placeholder{color:var(--text-mute)}
+input:focus{
+  border-color:var(--green-primary);
+  box-shadow:0 0 0 4px rgba(25,195,125,0.12);
+  background:rgba(0,0,0,0.4);
+}
+.pw-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--text-mute);cursor:pointer;
+  font-size:16px;padding:4px;
+  transition:color 0.2s;
+}
+.pw-toggle:hover{color:var(--text-bright)}
+
+button[type="submit"]{
+  width:100%;padding:14px;border-radius:12px;
+  font-family:'Plus Jakarta Sans';font-weight:700;font-size:14px;
+  border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--green-primary),var(--green-deep));
+  color:#04130d;
+  box-shadow:0 8px 24px rgba(25,195,125,0.3);
+  transition:all 0.25s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:6px;
+}
+button[type="submit"]:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(25,195,125,0.5)}
+button[type="submit"]:active{transform:translateY(0)}
+button[type="submit"]:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+#err{
+  color:var(--red-alert);font-size:13px;margin-top:14px;
+  padding:10px 14px;border-radius:10px;
+  background:rgba(255,90,110,0.10);
+  border:1px solid rgba(255,90,110,0.25);
+  display:none;align-items:center;gap:8px;
+  animation:shake 0.4s;
+}
+#err.show{display:flex}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  75%{transform:translateX(4px)}
+}
+
+.form-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin:14px 0 6px;font-size:12px;
+}
+.checkbox-wrap{display:flex;align-items:center;gap:8px;color:var(--text-soft);cursor:pointer;user-select:none}
+.checkbox-wrap input{
+  width:16px;height:16px;accent-color:var(--green-primary);cursor:pointer;
+}
+.back-link{
+  color:var(--green-glow);text-decoration:none;font-weight:600;
+  font-size:12px;transition:color 0.2s;
+}
+.back-link:hover{text-decoration:underline}
+
+.footer-credit{
+  margin-top:26px;padding-top:20px;
+  border-top:1px solid var(--glass-border);
+  text-align:center;
+}
+.footer-credit-text{
+  font-size:11px;color:var(--text-mute);line-height:1.6;
+}
+.footer-credit-text b{color:var(--green-glow);font-weight:700}
+
+.spinner{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(4,19,13,0.3);
+  border-top-color:#04130d;
+  animation:spin 0.7s linear infinite;
+  display:none;
+}
+.spinner.show{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
+
+<!-- Animated background bubbles -->
+<div class="bg-bubble b1"></div>
+<div class="bg-bubble b2"></div>
+<div class="bg-bubble b3"></div>
+
 <div class="box">
-  <div class="logos"><img src="/images/kp-logo.png" alt="KP"><img src="/images/dglg-logo.png" alt="DGLG"></div>
-  <h2 style="font-family:'Poppins';color:#14241b">Officer Login</h2>
-  <p style="color:#8a9b91;font-size:13px;margin-bottom:20px">Pak Saaf Image Gallery</p>
-  <input type="text" id="username" placeholder="Username" required>
-  <input type="password" id="password" placeholder="Password" required>
-  <button onclick="login()">Login to Dashboard</button>
-  <p id="err" style="color:#d32f2f;font-size:13px;margin-top:15px"></p>
-  <p style="margin-top:20px;font-size:12px;color:#8a9b91">Developed by: @Engr. Shaleem Khokhar | 0300-5988832</p>
+
+  <!-- Logos (same as original — your real KP + DGLG logos) -->
+  <div class="logos">
+    <img src="/images/kp-logo.png" alt="KP Government">
+    <img src="/images/dglg-logo.png" alt="DGLG">
+  </div>
+
+  <div class="brand-block">
+    <div class="brand-title">Officer Login</div>
+    <div class="brand-sub">Sign in to <b>Pak Saaf</b> Image Gallery<br>KP Local Government &amp; Rural Development</div>
+  </div>
+
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label class="form-label" for="username">Username</label>
+      <div class="input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input type="text" id="username" placeholder="e.g. abb_001" autocomplete="username" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <div class="input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" onclick="togglePw()">👁</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="checkbox-wrap">
+        <input type="checkbox" id="remember">
+        <span>Remember me</span>
+      </label>
+      <a href="/" class="back-link">← Back to Gallery</a>
+    </div>
+
+    <button type="submit" id="loginBtn">
+      <span id="btnText">🚀 Login to Dashboard</span>
+      <span class="spinner" id="spinner"></span>
+    </button>
+
+    <div id="err"></div>
+  </form>
+
+  <div class="footer-credit">
+    <div class="footer-credit-text">
+      🔒 Secured with bcrypt + JWT (8h expiry)<br>
+      Developed by: <b>@Engr. Shaleem Khokhar</b> | 0300-5988832
+    </div>
+  </div>
 </div>
+
 <script>
-async function login() {
-  const res = await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: document.getElementById('username').value, password: document.getElementById('password').value })
-  });
-  if(res.ok) {
-    const data = await res.json();
-    localStorage.setItem('token', data.token); 
-    localStorage.setItem('role', data.role); 
-    localStorage.setItem('vcId', data.vcId);
-    localStorage.setItem('mustChangePassword', data.mustChangePassword); 
-    localStorage.setItem('district', data.district); 
-    localStorage.setItem('tehsil', data.tehsil); 
-    localStorage.setItem('vcName', data.vcName);
-    
-    if(data.mustChangePassword) {
-      window.location.href = '/change-password.html';
+/* =====================================================
+   EXACT SAME AUTH LOGIC AS YOUR ORIGINAL — UNCHANGED
+   Only wrapped in form-submit handler for UX
+   ===================================================== */
+
+function togglePw(){
+  const p = document.getElementById('password');
+  p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+async function handleLogin(event){
+  event.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('err');
+  const btn = document.getElementById('loginBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+
+  // Hide previous error
+  errEl.classList.remove('show');
+  errEl.innerText = '';
+
+  if(!username || !password){
+    errEl.innerHTML = '<span>⚠️</span><span>Please enter both username and password</span>';
+    errEl.classList.add('show');
+    return;
+  }
+
+  // Show loading state
+  btn.disabled = true;
+  spinner.classList.add('show');
+  btnText.textContent = 'Signing in…';
+
+  try {
+    // === YOUR ORIGINAL FETCH — UNCHANGED ===
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if(res.ok){
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('vcId', data.vcId);
+      localStorage.setItem('mustChangePassword', data.mustChangePassword);
+      localStorage.setItem('district', data.district);
+      localStorage.setItem('tehsil', data.tehsil);
+      localStorage.setItem('vcName', data.vcName);
+
+      // === YOUR ORIGINAL REDIRECT LOGIC — UNCHANGED ===
+      if(data.mustChangePassword){
+        window.location.href = '/change-password.html';
+      } else {
+        window.location.href = '/dashboard.html';
+      }
     } else {
-      window.location.href = '/dashboard.html';
+      btn.disabled = false;
+      spinner.classList.remove('show');
+      btnText.textContent = '🚀 Login to Dashboard';
+      errEl.innerHTML = '<span>❌</span><span>Invalid username or password</span>';
+      errEl.classList.add('show');
     }
-  } else { 
-    document.getElementById('err').innerText = 'Invalid username or password'; 
+  } catch(err){
+    btn.disabled = false;
+    spinner.classList.remove('show');
+    btnText.textContent = '🚀 Login to Dashboard';
+    errEl.innerHTML = '<span>⚠️</span><span>Network error. Please check your connection and try again.</span>';
+    errEl.classList.add('show');
   }
 }
+
+// Allow Enter key to submit
+document.getElementById('password').addEventListener('keypress', e => {
+  if(e.key === 'Enter') document.getElementById('loginForm').requestSubmit();
+});
 </script>
 </body>
 </html>
